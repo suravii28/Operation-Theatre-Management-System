@@ -1,0 +1,100 @@
+name: OTMS Documentation Validation Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - "**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-pdfs:
+    name: Validate OTMS Project Documents
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check required OTMS documents exist
+        run: |
+          set -e
+          required_files=(
+            "SAD_OTMS.pdf"
+            "SRS_OTMS.pdf"
+            "STP_OTMS.pdf"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Required document not found: $file"
+              echo "Check that $file exists at the repository root and is committed."
+              exit 1
+            fi
+            echo "Found: $file"
+          done
+
+      - name: Validate PDF integrity
+        run: |
+          set -u
+          fail=0
+
+          for file in SAD_OTMS.pdf SRS_OTMS.pdf STP_OTMS.pdf; do
+            size=$(stat -c%s "$file")
+
+            if [ "$size" -lt 1000 ]; then
+              echo "::error file=$file::File is smaller than 1000 bytes ($size bytes); check whether it is a valid PDF."
+              fail=1
+            elif [ "$(head -c 4 "$file")" != "%PDF" ]; then
+              echo "::error file=$file::File does not start with a PDF header."
+              fail=1
+            else
+              echo "PDF header and size check passed: $file ($size bytes)"
+            fi
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            echo "One or more required OTMS PDFs failed validation."
+            exit 1
+          fi
+
+      - name: List OTMS project documents
+        run: |
+          echo "OTMS project documentation in this repository:"
+          ls -lh SAD_OTMS.pdf SRS_OTMS.pdf STP_OTMS.pdf
+
+      - name: Show event and changed files
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          echo "Event: $EVENT_NAME"
+          echo "Actor: $ACTOR"
+          echo "Ref: $REF"
+          echo "---"
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "Pull request #$PR_NUMBER: $PR_TITLE"
+            echo "Base branch: $PR_BASE"
+            echo "Head branch: $PR_HEAD"
+            echo "Changed files:"
+            git diff --name-only "origin/$PR_BASE...HEAD" || echo "(unable to compute diff)"
+          else
+            echo "Commit: ${HEAD_MESSAGE:-manual or branch event}"
+            echo "Changed files in latest commit:"
+            git diff-tree --no-commit-id --name-only -r HEAD || echo "(unable to compute diff)"
+          fi
