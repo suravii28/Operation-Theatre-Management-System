@@ -1,0 +1,28 @@
+# Reviewers are requested automatically based on who owns the changed paths.
+# These are review requests, not a merge block: any one teammate approval is enough.
+
+# Default owner for anything not matched below
+*                       @suravii28
+
+# Repository automation and CI
+/.github/               @suravii28
+/scripts/               @suravii28
+/.githooks/             @suravii28
+
+# Backend (Spring Boot)
+/backend/               @suravii28
+/pom.xml                @suravii28
+
+# Frontend (React)
+/frontend/              @suravii28 @PraneethaSreedharala
+
+# Tests and QA assets
+**/src/test/            @sudikshavaranasi
+**/*.test.*             @sudikshavaranasi
+**/*.spec.*             @sudikshavaranasi
+
+# Requirements and project documentation
+/docs/                  @shestg28 @PraneethaSreedharala
+*.pdf                   @shestg28 @PraneethaSreedharala
+/README.md              @shestg28
+/CONTRIBUTING.md        @suravii28

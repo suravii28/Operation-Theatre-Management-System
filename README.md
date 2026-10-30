@@ -70,6 +70,18 @@ The project uses Git and GitHub for collaborative development and version contro
 - Team members should pull the latest changes from `main` after merges.
 - Contributions should be meaningful, balanced, and properly tested.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the developer workflow (branches, tests, pull
+requests, reviews, and syncing `main`) and [docs/git-workflow.md](docs/git-workflow.md)
+for how the rules are enforced by CI, hooks, and branch protection.
+
+### Quick start for contributors
+
+```bash
+git clone https://github.com/suravii28/Operation-Theatre-Management-System.git
+cd Operation-Theatre-Management-System
+./scripts/setup-dev.sh
+```
+
 ## Project Scope
 
 OTMS focuses on the operational coordination of surgeries and operation theatre resources. It does not perform medical diagnosis or implement clinical treatment processes. Integration with external hospital systems is limited to defined interfaces and required data exchanges.
