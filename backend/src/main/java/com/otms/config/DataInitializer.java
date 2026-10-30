@@ -56,7 +56,7 @@ public class DataInitializer implements ApplicationRunner {
         surgery("Imran Khan", "Hip replacement", drPriya, ot3,
                 today.atTime(13, 30), today.atTime(16, 0), false, null);
         surgery("Lakshmi Rao", "Emergency laparotomy", drPriya, ot1,
-                LocalDateTime.of(today, LocalTime.now().plusHours(2).withMinute(0)), false);
+                LocalDateTime.of(today, LocalTime.now().plusHours(2).withMinute(0)), true);
 
         surgery("Vikram Singh", "Knee arthroscopy", drRam, ot3,
                 today.plusDays(1).atTime(9, 30), today.plusDays(1).atTime(11, 0), false, null);
