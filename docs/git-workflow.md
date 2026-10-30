@@ -9,7 +9,7 @@ what an administrator must configure on GitHub. Developer instructions live in
 | # | Requirement | Implementation |
 |---|-------------|----------------|
 | 1 | One common repository | `https://github.com/suravii28/Operation-Theatre-Management-System` |
-| 2 | All teammates as collaborators | GitHub → Settings → Collaborators: `PraneethaSreedharala`, `shestg28`, `sudikshavaranasi` (plus owner `suravii28`) |
+| 2 | All teammates as collaborators | GitHub → Settings → Collaborators: `PraneethaSreedharala`, `shestg28`, `sudhikshavaranasi` (plus owner `suravii28`) |
 | 3 | CI runs tests automatically | `.github/workflows/ci-cd.yml` runs on every pull request to `main` and on pushes to `main`: docs validation, Maven backend tests, Node frontend tests |
 | 4 | Protect `main`, no direct unverified pushes | Branch protection: pull request required, required status check `CI Success`, force pushes and deletions blocked, rules apply to admins |
 | 5 | Each feature in its own branch | Protected `main` blocks direct pushes; `CONTRIBUTING.md` defines `feature/`, `fix/`, `test/`, `docs/`, `chore/` prefixes |
@@ -89,7 +89,7 @@ git commit -m "feat: add conflict detection"
 
 # 4. Push (pre-push hook runs tests) and open a PR (rule 8)
 git push -u origin feature/conflict-detection
-gh pr create --fill --reviewer sudikshavaranasi
+gh pr create --fill --reviewer sudhikshavaranasi
 
 # 5. Wait for CI Success + approval, then squash and merge (rule 9)
 

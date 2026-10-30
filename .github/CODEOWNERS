@@ -17,9 +17,9 @@
 /frontend/              @suravii28 @PraneethaSreedharala
 
 # Tests and QA assets
-**/src/test/            @sudikshavaranasi
-**/*.test.*             @sudikshavaranasi
-**/*.spec.*             @sudikshavaranasi
+**/src/test/            @sudhikshavaranasi
+**/*.test.*             @sudhikshavaranasi
+**/*.spec.*             @sudhikshavaranasi
 
 # Requirements and project documentation
 /docs/                  @shestg28 @PraneethaSreedharala
