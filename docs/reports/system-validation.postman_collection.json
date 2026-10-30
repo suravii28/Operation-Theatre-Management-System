@@ -1,0 +1,292 @@
+{
+  "info": {
+    "name": "OTMS System Validation",
+    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend with seeded data. Maps to SRS acceptance test cases.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC-Auth-01 Login with valid credentials",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 200 with JWT token', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.token).to.be.a('string').that.is.not.empty;",
+              "  pm.collectionVariables.set('token', body.token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"admin@otms.local\",\"password\":\"Admin123!\"}"
+        }
+      }
+    },
+    {
+      "name": "TC-Auth-02 Login with invalid credentials rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 401', function () { pm.response.to.have.status(401); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"admin@otms.local\",\"password\":\"wrong-password\"}"
+        }
+      }
+    },
+    {
+      "name": "TC-Sec-05 Protected endpoint without token rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 401 or 403', function () {",
+              "  pm.expect([401, 403]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] }
+      }
+    },
+    {
+      "name": "TC-SURG-03 View surgery list with token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 200 with surgeries array', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] }
+      }
+    },
+    {
+      "name": "TC-SURG-01 Create a valid surgery",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function fmt(d) {",
+              "  const p = function (n) { return String(n).padStart(2, '0'); };",
+              "  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());",
+              "}",
+              "const s = new Date(); s.setHours(8, 0, 0, 0);",
+              "const e = new Date(); e.setHours(9, 0, 0, 0);",
+              "pm.collectionVariables.set('createStart', fmt(s));",
+              "pm.collectionVariables.set('createEnd', fmt(e));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 201 or 200 with created surgery', function () {",
+              "  pm.expect([200, 201]).to.include(pm.response.code);",
+              "  pm.collectionVariables.set('surgeryId', pm.response.json().id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Postman Validation\",\"procedureName\":\"Validation cholecystectomy\",\"theatreId\":3,\"leadSurgeonId\":3,\"startTime\":\"{{createStart}}\",\"endTime\":\"{{createEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-SCH-02/03 Overlapping theatre slot rejected with 409",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function fmt(d) {",
+              "  const p = function (n) { return String(n).padStart(2, '0'); };",
+              "  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());",
+              "}",
+              "const s = new Date(); s.setHours(9, 30, 0, 0);",
+              "const e = new Date(); e.setHours(10, 30, 0, 0);",
+              "pm.collectionVariables.set('overlapStart', fmt(s));",
+              "pm.collectionVariables.set('overlapEnd', fmt(e));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 409 with conflict details (TC-CON-02)', function () {",
+              "  pm.response.to.have.status(409);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.message).to.be.a('string').that.is.not.empty;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Overlap Patient\",\"procedureName\":\"Overlap procedure\",\"theatreId\":1,\"leadSurgeonId\":3,\"startTime\":\"{{overlapStart}}\",\"endTime\":\"{{overlapEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-RES-01 Surgeon double-booking rejected with 409",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function fmt(d) {",
+              "  const p = function (n) { return String(n).padStart(2, '0'); };",
+              "  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());",
+              "}",
+              "const s = new Date(); s.setHours(8, 30, 0, 0);",
+              "const e = new Date(); e.setHours(9, 30, 0, 0);",
+              "pm.collectionVariables.set('clashStart', fmt(s));",
+              "pm.collectionVariables.set('clashEnd', fmt(e));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 409 when lead surgeon is double-booked', function () {",
+              "  pm.response.to.have.status(409);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Surgeon Clash\",\"procedureName\":\"Clash procedure\",\"theatreId\":3,\"leadSurgeonId\":3,\"startTime\":\"{{clashStart}}\",\"endTime\":\"{{clashEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-EMG-01 Emergency surgeries are listed",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 200 and all listed surgeries are emergencies', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const list = pm.response.json();",
+              "  pm.expect(list).to.be.an('array');",
+              "  list.forEach(function (s) { pm.expect(s.emergency).to.eq(true); });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/surgeries/emergencies", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "emergencies"] }
+      }
+    },
+    {
+      "name": "TC-SURG-02 Status transition on created surgery",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status changes to IN_PROGRESS', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().status).to.eq('IN_PROGRESS');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{surgeryId}}", "status"] },
+        "body": { "mode": "raw", "raw": "{\"status\":\"IN_PROGRESS\"}" }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "surgeryId", "value": "" }
+  ]
+}

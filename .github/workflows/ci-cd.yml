@@ -114,6 +114,14 @@ jobs:
             mvn -B test
           fi
 
+      - name: Publish JaCoCo coverage report
+        if: steps.detect.outputs.found == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-jacoco
+          path: ${{ steps.detect.outputs.dir }}/target/site/jacoco/
+          if-no-files-found: ignore
+
       - name: Skip notice (no backend yet)
         if: steps.detect.outputs.found != 'true'
         run: echo "::notice::No Maven project found (backend/pom.xml or pom.xml). Backend tests skipped."
@@ -166,6 +174,21 @@ jobs:
         env:
           CI: "true"
         run: npm test --if-present
+
+      - name: Run frontend coverage
+        if: steps.detect.outputs.found == 'true'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        env:
+          CI: "true"
+        run: npm run test:coverage --if-present
+
+      - name: Publish frontend coverage report
+        if: steps.detect.outputs.found == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-v8
+          path: ${{ steps.detect.outputs.dir }}/coverage/
+          if-no-files-found: ignore
 
       - name: Skip notice (no frontend yet)
         if: steps.detect.outputs.found != 'true'
