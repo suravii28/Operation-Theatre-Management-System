@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.otms.service.SchedulingServiceTest
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.227 s -- in com.otms.service.SchedulingServiceTest

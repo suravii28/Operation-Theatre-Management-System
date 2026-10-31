@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataInitializer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">otms-backend</a> &gt; <a href="index.source.html" class="el_package">com.otms.config</a> &gt; <span class="el_source">DataInitializer.java</span></div><h1>DataInitializer.java</h1><pre class="source lang-java linenums">package com.otms.config;
+
+import com.otms.model.*;
+import com.otms.repository.SurgeryRepository;
+import com.otms.repository.TheatreRepository;
+import com.otms.repository.UserAccountRepository;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
+@Component
+@Profile(&quot;!prod&quot;)
+public class DataInitializer implements ApplicationRunner {
+
+    private final UserAccountRepository userRepository;
+    private final TheatreRepository theatreRepository;
+    private final SurgeryRepository surgeryRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(UserAccountRepository userRepository,
+                           TheatreRepository theatreRepository,
+                           SurgeryRepository surgeryRepository,
+<span class="fc" id="L29">                           PasswordEncoder passwordEncoder) {</span>
+<span class="fc" id="L30">        this.userRepository = userRepository;</span>
+<span class="fc" id="L31">        this.theatreRepository = theatreRepository;</span>
+<span class="fc" id="L32">        this.surgeryRepository = surgeryRepository;</span>
+<span class="fc" id="L33">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public void run(ApplicationArguments args) {
+<span class="fc" id="L38">        UserAccount admin = user(&quot;admin@otms.local&quot;, &quot;Admin123!&quot;, &quot;Asha Admin&quot;, Role.ADMIN);</span>
+<span class="fc" id="L39">        user(&quot;coordinator@otms.local&quot;, &quot;Coord123!&quot;, &quot;Kiran Coordinator&quot;, Role.COORDINATOR);</span>
+<span class="fc" id="L40">        UserAccount drRam = user(&quot;dr.ram@otms.local&quot;, &quot;Doctor123!&quot;, &quot;Dr. Ram Sharma&quot;, Role.DOCTOR);</span>
+<span class="fc" id="L41">        UserAccount drPriya = user(&quot;dr.priya@otms.local&quot;, &quot;Doctor123!&quot;, &quot;Dr. Priya Nair&quot;, Role.DOCTOR);</span>
+<span class="fc" id="L42">        user(&quot;nurse@otms.local&quot;, &quot;Nurse123!&quot;, &quot;Meera Nurse&quot;, Role.NURSE);</span>
+<span class="fc" id="L43">        user(&quot;tech@otms.local&quot;, &quot;Tech123!&quot;, &quot;Arun Technician&quot;, Role.TECHNICIAN);</span>
+
+<span class="fc" id="L45">        Theatre ot1 = theatre(&quot;OT-1&quot;, &quot;General Surgery&quot;);</span>
+<span class="fc" id="L46">        Theatre ot2 = theatre(&quot;OT-2&quot;, &quot;Cardiac&quot;);</span>
+<span class="fc" id="L47">        Theatre ot3 = theatre(&quot;OT-3&quot;, &quot;Orthopaedic&quot;);</span>
+
+<span class="fc" id="L49">        LocalDate today = LocalDate.now();</span>
+
+        // Deliberate surgeon double-booking so the UI can demonstrate the conflict badge.
+<span class="fc" id="L52">        surgery(&quot;Ravi Kumar&quot;, &quot;Appendectomy&quot;, drRam, ot1,</span>
+<span class="fc" id="L53">                today.atTime(9, 0), today.atTime(11, 0), false, &quot;Routine&quot;);</span>
+<span class="fc" id="L54">        surgery(&quot;Sunita Devi&quot;, &quot;Angioplasty&quot;, drRam, ot2,</span>
+<span class="fc" id="L55">                today.atTime(10, 0), today.atTime(12, 0), false, &quot;Demo conflict: Dr. Ram double-booked&quot;);</span>
+<span class="fc" id="L56">        surgery(&quot;Imran Khan&quot;, &quot;Hip replacement&quot;, drPriya, ot3,</span>
+<span class="fc" id="L57">                today.atTime(13, 30), today.atTime(16, 0), false, null);</span>
+<span class="fc" id="L58">        surgery(&quot;Lakshmi Rao&quot;, &quot;Emergency laparotomy&quot;, drPriya, ot1,</span>
+<span class="fc" id="L59">                LocalDateTime.of(today, LocalTime.now().plusHours(2).withMinute(0)), true);</span>
+
+<span class="fc" id="L61">        surgery(&quot;Vikram Singh&quot;, &quot;Knee arthroscopy&quot;, drRam, ot3,</span>
+<span class="fc" id="L62">                today.plusDays(1).atTime(9, 30), today.plusDays(1).atTime(11, 0), false, null);</span>
+<span class="fc" id="L63">        surgery(&quot;Anita Desai&quot;, &quot;Pacemaker implant&quot;, drPriya, ot2,</span>
+<span class="fc" id="L64">                today.plusDays(1).atTime(14, 0), today.plusDays(1).atTime(16, 30), false, null);</span>
+<span class="fc" id="L65">    }</span>
+
+    private UserAccount user(String email, String password, String name, Role role) {
+<span class="fc" id="L68">        return userRepository.save(new UserAccount(email, passwordEncoder.encode(password), name, role));</span>
+    }
+
+    private Theatre theatre(String name, String speciality) {
+<span class="fc" id="L72">        return theatreRepository.save(new Theatre(name, speciality));</span>
+    }
+
+    private void surgery(String patient, String procedure, UserAccount surgeon, Theatre theatre,
+                         LocalDateTime start, LocalDateTime end, boolean emergency, String notes) {
+<span class="fc" id="L77">        Surgery s = new Surgery();</span>
+<span class="fc" id="L78">        s.setPatientName(patient);</span>
+<span class="fc" id="L79">        s.setProcedureName(procedure);</span>
+<span class="fc" id="L80">        s.setLeadSurgeon(surgeon);</span>
+<span class="fc" id="L81">        s.setTheatre(theatre);</span>
+<span class="fc" id="L82">        s.setStartTime(start);</span>
+<span class="fc" id="L83">        s.setEndTime(end);</span>
+<span class="fc" id="L84">        s.setEmergency(emergency);</span>
+<span class="fc" id="L85">        s.setNotes(notes);</span>
+<span class="fc" id="L86">        s.setStatus(SurgeryStatus.SCHEDULED);</span>
+<span class="fc" id="L87">        surgeryRepository.save(s);</span>
+<span class="fc" id="L88">    }</span>
+
+    private void surgery(String patient, String procedure, UserAccount surgeon, Theatre theatre,
+                         LocalDateTime start, boolean emergency) {
+<span class="fc" id="L92">        surgery(patient, procedure, surgeon, theatre, start, start.plusHours(2), emergency,</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                emergency ? &quot;Emergency case - prioritise&quot; : null);</span>
+<span class="fc" id="L94">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
