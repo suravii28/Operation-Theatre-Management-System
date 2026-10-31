@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">otms-backend</a> &gt; <a href="index.source.html" class="el_package">com.otms.config</a> &gt; <span class="el_source">JwtService.java</span></div><h1>JwtService.java</h1><pre class="source lang-java linenums">package com.otms.config;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Optional;
+
+@Service
+public class JwtService {
+
+    private final SecretKey key;
+    private final Duration ttl;
+
+    public JwtService(@Value(&quot;${jwt.secret}&quot;) String secret,
+<span class="fc" id="L23">                      @Value(&quot;${jwt.expiration-minutes}&quot;) long expirationMinutes) {</span>
+<span class="fc" id="L24">        this.key = Keys.hmacShaKeyFor(padSecret(secret));</span>
+<span class="fc" id="L25">        this.ttl = Duration.ofMinutes(expirationMinutes);</span>
+<span class="fc" id="L26">    }</span>
+
+    public String generateToken(String email, String name, String role) {
+<span class="nc" id="L29">        Instant now = Instant.now();</span>
+<span class="nc" id="L30">        return Jwts.builder()</span>
+<span class="nc" id="L31">                .subject(email)</span>
+<span class="nc" id="L32">                .claim(&quot;name&quot;, name)</span>
+<span class="nc" id="L33">                .claim(&quot;role&quot;, role)</span>
+<span class="nc" id="L34">                .issuedAt(Date.from(now))</span>
+<span class="nc" id="L35">                .expiration(Date.from(now.plus(ttl)))</span>
+<span class="nc" id="L36">                .signWith(key)</span>
+<span class="nc" id="L37">                .compact();</span>
+    }
+
+    public Optional&lt;Claims&gt; parse(String token) {
+        try {
+<span class="nc" id="L42">            return Optional.of(Jwts.parser()</span>
+<span class="nc" id="L43">                    .verifyWith(key)</span>
+<span class="nc" id="L44">                    .build()</span>
+<span class="nc" id="L45">                    .parseSignedClaims(token)</span>
+<span class="nc" id="L46">                    .getPayload());</span>
+<span class="nc" id="L47">        } catch (Exception ex) {</span>
+<span class="nc" id="L48">            return Optional.empty();</span>
+        }
+    }
+
+    private byte[] padSecret(String secret) {
+<span class="fc" id="L53">        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (bytes.length &gt;= 32) {</span>
+<span class="fc" id="L55">            return bytes;</span>
+        }
+<span class="nc" id="L57">        byte[] padded = new byte[32];</span>
+<span class="nc" id="L58">        System.arraycopy(bytes, 0, padded, 0, bytes.length);</span>
+<span class="nc" id="L59">        return padded;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
