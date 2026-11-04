@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SurgeryController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">otms-backend</a> &gt; <a href="index.source.html" class="el_package">com.otms.controller</a> &gt; <span class="el_source">SurgeryController.java</span></div><h1>SurgeryController.java</h1><pre class="source lang-java linenums">package com.otms.controller;
+
+import com.otms.dto.SurgeryRequest;
+import com.otms.dto.SurgeryResponse;
+import com.otms.model.SurgeryStatus;
+import com.otms.service.SchedulingService;
+import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/surgeries&quot;)
+public class SurgeryController {
+
+    private final SchedulingService schedulingService;
+
+<span class="fc" id="L22">    public SurgeryController(SchedulingService schedulingService) {</span>
+<span class="fc" id="L23">        this.schedulingService = schedulingService;</span>
+<span class="fc" id="L24">    }</span>
+
+    @GetMapping
+    public List&lt;SurgeryResponse&gt; list(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Long theatreId,
+            @RequestParam(required = false) SurgeryStatus status) {
+<span class="fc" id="L31">        return schedulingService.list(date, theatreId, status);</span>
+    }
+
+    @GetMapping(&quot;/emergencies&quot;)
+    public List&lt;SurgeryResponse&gt; emergencies() {
+<span class="nc" id="L36">        return schedulingService.listEmergencies();</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    public SurgeryResponse get(@PathVariable Long id) {
+<span class="nc" id="L41">        return schedulingService.get(id);</span>
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public SurgeryResponse create(@Valid @RequestBody SurgeryRequest request) {
+<span class="nc" id="L47">        return schedulingService.schedule(request);</span>
+    }
+
+    @PatchMapping(&quot;/{id}/status&quot;)
+    public SurgeryResponse updateStatus(@PathVariable Long id, @RequestBody Map&lt;String, String&gt; body) {
+<span class="nc" id="L52">        SurgeryStatus status = SurgeryStatus.valueOf(body.get(&quot;status&quot;));</span>
+<span class="nc" id="L53">        return schedulingService.updateStatus(id, status);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
