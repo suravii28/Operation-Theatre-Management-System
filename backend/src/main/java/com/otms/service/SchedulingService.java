@@ -74,6 +74,45 @@ public class SchedulingService {
         return toResponse(surgeryRepository.save(surgery));
     }
 
+    @Transactional
+    public SurgeryResponse update(Long id, SurgeryRequest request) {
+        if (!request.isEndAfterStart()) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+
+        Surgery surgery = surgeryRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Surgery not found: " + id));
+        if (surgery.getStatus() == SurgeryStatus.COMPLETED || surgery.getStatus() == SurgeryStatus.CANCELLED) {
+            throw new IllegalArgumentException("Completed or cancelled surgeries cannot be edited");
+        }
+
+        // Keep the same lock order as scheduling: theatre first, then surgeon.
+        Theatre theatre = theatreRepository.findByIdForUpdate(request.theatreId())
+                .filter(Theatre::isActive)
+                .orElseThrow(() -> new ResourceNotFoundException("Theatre not found: " + request.theatreId()));
+        UserAccount surgeon = userAccountRepository.findByIdForUpdate(request.leadSurgeonId())
+                .filter(UserAccount::isActive)
+                .orElseThrow(() -> new ResourceNotFoundException("Surgeon not found: " + request.leadSurgeonId()));
+
+        List<Surgery> conflicts = findConflicts(request.theatreId(), request.leadSurgeonId(),
+                request.startTime(), request.endTime()).stream()
+                .filter(other -> !other.getId().equals(id))
+                .toList();
+        if (!conflicts.isEmpty()) {
+            throw new SchedulingConflictException(describeConflicts(conflicts));
+        }
+
+        surgery.setPatientName(request.patientName());
+        surgery.setProcedureName(request.procedureName());
+        surgery.setLeadSurgeon(surgeon);
+        surgery.setTheatre(theatre);
+        surgery.setStartTime(request.startTime());
+        surgery.setEndTime(request.endTime());
+        surgery.setEmergency(request.emergency());
+        surgery.setNotes(request.notes());
+        return toResponse(surgeryRepository.save(surgery));
+    }
+
     @Transactional(readOnly = true)
     public List<Surgery> findConflicts(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {
         return surgeryRepository.findOverlapping(ACTIVE_STATUSES, start, end).stream()
