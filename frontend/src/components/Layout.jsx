@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/surgeries', label: 'Surgeries' },
   { to: '/theatres', label: 'Theatres' },
   { to: '/emergencies', label: 'Emergencies' },
+  { to: '/notifications', label: 'Notifications' },
   { to: '/reports', label: 'Reports' },
 ];
 

@@ -72,4 +72,6 @@ export const api = {
   createSurgery: (surgery) => request('/api/surgeries', { method: 'POST', body: surgery }),
   updateStatus: (id, status) =>
     request(`/api/surgeries/${id}/status`, { method: 'PATCH', body: { status } }),
+  listNotifications: () => request('/api/notifications'),
+  markNotificationRead: (id) => request(`/api/notifications/${id}/read`, { method: 'PATCH' }),
 };
