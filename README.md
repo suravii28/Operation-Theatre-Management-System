@@ -74,7 +74,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the developer workflow (branches, tes
 requests, reviews, and syncing `main`) and [docs/git-workflow.md](docs/git-workflow.md)
 for how the rules are enforced by CI, hooks, and branch protection.
 
-### Quick start for contributors
+### PostgreSQL development database\n\nThe default profile uses in-memory H2 and applies the same Flyway migrations automatically. To run with PostgreSQL:\n\n```bash\ndocker compose up -d postgres\ncd backend\nDB_URL=jdbc:postgresql://localhost:5432/otms DB_USERNAME=otms DB_PASSWORD=otms_dev_password JWT_SECRET=replace-this-with-a-long-random-secret ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod\n```\n\nFlyway applies versioned SQL migrations on startup; Hibernate validates the resulting schema and does not create or alter tables. The PostgreSQL CI job runs the backend test suite against a real PostgreSQL service.\n\n### Quick start for contributors
 
 ```bash
 git clone https://github.com/suravii28/Operation-Theatre-Management-System.git
@@ -88,9 +88,9 @@ OTMS focuses on the operational coordination of surgeries and operation theatre 
 
 ## Project Status
 
-**Current Phase:** Initial Documentation and Repository Setup
+**Current Phase:** Application implementation and integration testing
 
-The initial project documentation consists of the SRS, SAD, and STP. Application development, implementation, and testing will proceed according to the requirements and design specifications.
+The repository includes a React/Vite frontend and Spring Boot backend with JWT authentication, role-based authorization, theatre/surgery scheduling, conflict detection, emergency workflows, notifications and reporting. Features are delivered through reviewed pull requests. PostgreSQL is supported through Flyway migrations; H2 remains the default local development database.
 
 ## Roles Assigned
 
