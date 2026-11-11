@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Component
 @Profile("!prod")
@@ -55,8 +54,14 @@ public class DataInitializer implements ApplicationRunner {
                 today.atTime(10, 0), today.atTime(12, 0), false, "Demo conflict: Dr. Ram double-booked");
         surgery("Imran Khan", "Hip replacement", drPriya, ot3,
                 today.atTime(13, 30), today.atTime(16, 0), false, null);
+
+        // Deterministic emergency-impact scenario (TC-EMG-02/03/04): the emergency
+        // case deliberately displaces a routine surgery in OT-1 two days out, so
+        // the impact analysis and assisted reschedule can be validated end-to-end.
+        surgery("Mohan Verma", "Gallbladder removal", drPriya, ot1,
+                today.plusDays(2).atTime(15, 0), today.plusDays(2).atTime(17, 0), false, "Displaced by emergency");
         surgery("Lakshmi Rao", "Emergency laparotomy", drPriya, ot1,
-                LocalDateTime.of(today, LocalTime.now().plusHours(2).withMinute(0)), true);
+                today.plusDays(2).atTime(15, 0), today.plusDays(2).atTime(17, 0), true, "Emergency case - prioritise");
 
         surgery("Vikram Singh", "Knee arthroscopy", drRam, ot3,
                 today.plusDays(1).atTime(9, 30), today.plusDays(1).atTime(11, 0), false, null);
@@ -85,11 +90,5 @@ public class DataInitializer implements ApplicationRunner {
         s.setNotes(notes);
         s.setStatus(SurgeryStatus.SCHEDULED);
         surgeryRepository.save(s);
-    }
-
-    private void surgery(String patient, String procedure, UserAccount surgeon, Theatre theatre,
-                         LocalDateTime start, boolean emergency) {
-        surgery(patient, procedure, surgeon, theatre, start, start.plusHours(2), emergency,
-                emergency ? "Emergency case - prioritise" : null);
     }
 }

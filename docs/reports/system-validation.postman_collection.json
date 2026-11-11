@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "OTMS System Validation",
-    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend with seeded data. Maps to SRS acceptance test cases.",
+    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -77,6 +77,62 @@
       }
     },
     {
+      "name": "Setup - Resolve seeded theatre IDs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('seeded theatres resolve by name', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const byName = {};",
+              "  pm.response.json().forEach(function (t) { byName[t.name] = t.id; });",
+              "  pm.expect(byName['OT-1']).to.be.a('number');",
+              "  pm.expect(byName['OT-2']).to.be.a('number');",
+              "  pm.expect(byName['OT-3']).to.be.a('number');",
+              "  pm.collectionVariables.set('ot1Id', byName['OT-1']);",
+              "  pm.collectionVariables.set('ot2Id', byName['OT-2']);",
+              "  pm.collectionVariables.set('ot3Id', byName['OT-3']);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/theatres", "host": ["{{baseUrl}}"], "path": ["api", "theatres"] }
+      }
+    },
+    {
+      "name": "Setup - Resolve seeded surgeon IDs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('seeded doctors resolve by name', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const byName = {};",
+              "  pm.response.json().forEach(function (u) { byName[u.name] = u.id; });",
+              "  pm.expect(byName['Dr. Ram Sharma']).to.be.a('number');",
+              "  pm.expect(byName['Dr. Priya Nair']).to.be.a('number');",
+              "  pm.collectionVariables.set('drRamId', byName['Dr. Ram Sharma']);",
+              "  pm.collectionVariables.set('drPriyaId', byName['Dr. Priya Nair']);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/staff?role=DOCTOR", "host": ["{{baseUrl}}"], "path": ["api", "staff"], "query": [{ "key": "role", "value": "DOCTOR" }] }
+      }
+    },
+    {
       "name": "TC-SURG-03 View surgery list with token",
       "event": [
         {
@@ -105,14 +161,15 @@
           "listen": "prerequest",
           "script": {
             "exec": [
-              "function fmt(d) {",
-              "  const p = function (n) { return String(n).padStart(2, '0'); };",
-              "  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());",
-              "}",
-              "const s = new Date(); s.setHours(8, 0, 0, 0);",
-              "const e = new Date(); e.setHours(9, 0, 0, 0);",
-              "pm.collectionVariables.set('createStart', fmt(s));",
-              "pm.collectionVariables.set('createEnd', fmt(e));"
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('createStart', dayAt(0, 8, 0));",
+              "pm.collectionVariables.set('createEnd', dayAt(0, 9, 0));"
             ],
             "type": "text/javascript"
           }
@@ -123,7 +180,9 @@
             "exec": [
               "pm.test('returns 201 or 200 with created surgery', function () {",
               "  pm.expect([200, 201]).to.include(pm.response.code);",
-              "  pm.collectionVariables.set('surgeryId', pm.response.json().id);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eq('SCHEDULED');",
+              "  pm.collectionVariables.set('surgeryId', body.id);",
               "});"
             ],
             "type": "text/javascript"
@@ -139,7 +198,7 @@
         "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Postman Validation\",\"procedureName\":\"Validation cholecystectomy\",\"theatreId\":3,\"leadSurgeonId\":3,\"startTime\":\"{{createStart}}\",\"endTime\":\"{{createEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Postman Validation\",\"procedureName\":\"Validation cholecystectomy\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{createStart}}\",\"endTime\":\"{{createEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -150,14 +209,15 @@
           "listen": "prerequest",
           "script": {
             "exec": [
-              "function fmt(d) {",
-              "  const p = function (n) { return String(n).padStart(2, '0'); };",
-              "  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());",
-              "}",
-              "const s = new Date(); s.setHours(9, 30, 0, 0);",
-              "const e = new Date(); e.setHours(10, 30, 0, 0);",
-              "pm.collectionVariables.set('overlapStart', fmt(s));",
-              "pm.collectionVariables.set('overlapEnd', fmt(e));"
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('overlapStart', dayAt(0, 9, 30));",
+              "pm.collectionVariables.set('overlapEnd', dayAt(0, 10, 30));"
             ],
             "type": "text/javascript"
           }
@@ -185,7 +245,7 @@
         "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Overlap Patient\",\"procedureName\":\"Overlap procedure\",\"theatreId\":1,\"leadSurgeonId\":3,\"startTime\":\"{{overlapStart}}\",\"endTime\":\"{{overlapEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Overlap Patient\",\"procedureName\":\"Overlap procedure\",\"theatreId\":{{ot1Id}},\"leadSurgeonId\":{{drPriyaId}},\"startTime\":\"{{overlapStart}}\",\"endTime\":\"{{overlapEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -196,14 +256,15 @@
           "listen": "prerequest",
           "script": {
             "exec": [
-              "function fmt(d) {",
-              "  const p = function (n) { return String(n).padStart(2, '0'); };",
-              "  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());",
-              "}",
-              "const s = new Date(); s.setHours(8, 30, 0, 0);",
-              "const e = new Date(); e.setHours(9, 30, 0, 0);",
-              "pm.collectionVariables.set('clashStart', fmt(s));",
-              "pm.collectionVariables.set('clashEnd', fmt(e));"
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('clashStart', dayAt(0, 8, 30));",
+              "pm.collectionVariables.set('clashEnd', dayAt(0, 9, 30));"
             ],
             "type": "text/javascript"
           }
@@ -229,7 +290,7 @@
         "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Surgeon Clash\",\"procedureName\":\"Clash procedure\",\"theatreId\":3,\"leadSurgeonId\":3,\"startTime\":\"{{clashStart}}\",\"endTime\":\"{{clashEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Surgeon Clash\",\"procedureName\":\"Clash procedure\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{clashStart}}\",\"endTime\":\"{{clashEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -245,6 +306,11 @@
               "  const list = pm.response.json();",
               "  pm.expect(list).to.be.an('array');",
               "  list.forEach(function (s) { pm.expect(s.emergency).to.eq(true); });",
+              "});",
+              "pm.test('seeded emergency scenario is present', function () {",
+              "  const seeded = pm.response.json().filter(function (s) { return s.procedureName === 'Emergency laparotomy'; });",
+              "  pm.expect(seeded.length).to.be.at.least(1);",
+              "  pm.collectionVariables.set('emergencyId', seeded[0].id);",
               "});"
             ],
             "type": "text/javascript"
@@ -282,11 +348,471 @@
         "url": { "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{surgeryId}}", "status"] },
         "body": { "mode": "raw", "raw": "{\"status\":\"IN_PROGRESS\"}" }
       }
+    },
+    {
+      "name": "TC-SEC-02 Login as doctor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('doctor login returns 200 with DOCTOR role', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.role).to.eq('DOCTOR');",
+              "  pm.collectionVariables.set('doctorToken', body.token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"dr.ram@otms.local\",\"password\":\"Doctor123!\"}"
+        }
+      }
+    },
+    {
+      "name": "TC-SEC-02 Doctor is forbidden from creating surgeries",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('guardStart', dayAt(0, 12, 0));",
+              "pm.collectionVariables.set('guardEnd', dayAt(0, 13, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 403 with role denial message (RBAC)', function () {",
+              "  pm.response.to.have.status(403);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.message).to.include('role');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctorToken}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Doctor Denied\",\"procedureName\":\"Role guard probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{guardStart}}\",\"endTime\":\"{{guardEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-SEC-02 Doctor is forbidden from rescheduling surgeries",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('reschedGuardStart', dayAt(1, 10, 0));",
+              "pm.collectionVariables.set('reschedGuardEnd', dayAt(1, 12, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 403 for reschedule endpoint (RBAC)', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctorToken}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/reschedule", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{surgeryId}}", "reschedule"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"theatreId\":{{ot2Id}},\"startTime\":\"{{reschedGuardStart}}\",\"endTime\":\"{{reschedGuardEnd}}\"}"
+        }
+      }
+    },
+    {
+      "name": "TC-RES-04 Login as technician",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('technician login returns 200 with TECHNICIAN role', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.role).to.eq('TECHNICIAN');",
+              "  pm.collectionVariables.set('techToken', body.token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"tech@otms.local\",\"password\":\"Tech123!\"}"
+        }
+      }
+    },
+    {
+      "name": "TC-RES-04 Technician disables theatre availability",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('theatre toggles to inactive (OTMS-F-021)', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.name).to.eq('OT-3');",
+              "  pm.expect(body.active).to.eq(false);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{techToken}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability", "host": ["{{baseUrl}}"], "path": ["api", "theatres", "{{ot3Id}}", "availability"] },
+        "body": { "mode": "raw", "raw": "{\"active\":false}" }
+      }
+    },
+    {
+      "name": "TC-RES-04 Scheduling into disabled theatre rejected",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('disabledStart', dayAt(1, 12, 0));",
+              "pm.collectionVariables.set('disabledEnd', dayAt(1, 13, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 404 for inactive theatre', function () {",
+              "  pm.response.to.have.status(404);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.message).to.include('Theatre');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Disabled Theatre Patient\",\"procedureName\":\"Availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{disabledStart}}\",\"endTime\":\"{{disabledEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-RES-04 Technician re-enables theatre availability",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('theatre toggles back to active', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.name).to.eq('OT-3');",
+              "  pm.expect(body.active).to.eq(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{techToken}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability", "host": ["{{baseUrl}}"], "path": ["api", "theatres", "{{ot3Id}}", "availability"] },
+        "body": { "mode": "raw", "raw": "{\"active\":true}" }
+      }
+    },
+    {
+      "name": "TC-EMG-03 Impact analysis identifies displaced surgery",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('impact analysis lists the displaced routine surgery (OTMS-F-017)', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const impact = pm.response.json();",
+              "  pm.expect(impact).to.be.an('array');",
+              "  const displaced = impact.filter(function (s) { return s.patientName === 'Mohan Verma'; });",
+              "  pm.expect(displaced.length).to.eq(1);",
+              "  pm.expect(displaced[0].theatreName).to.eq('OT-1');",
+              "  pm.expect(displaced[0].emergency).to.eq(false);",
+              "  pm.collectionVariables.set('displacedId', displaced[0].id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/surgeries/{{emergencyId}}/impact", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{emergencyId}}", "impact"] }
+      }
+    },
+    {
+      "name": "TC-EMG-04 Reschedule displaced surgery to a free slot",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('newSlotStart', dayAt(3, 9, 0));",
+              "pm.collectionVariables.set('newSlotEnd', dayAt(3, 11, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('displaced surgery moves to the alternative slot (OTMS-F-018)', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const s = pm.response.json();",
+              "  pm.expect(s.patientName).to.eq('Mohan Verma');",
+              "  pm.expect(s.theatreName).to.eq('OT-2');",
+              "  pm.expect(s.status).to.eq('SCHEDULED');",
+              "  pm.expect(String(s.startTime)).to.contain('T09:00');",
+              "  pm.expect(String(s.endTime)).to.contain('T11:00');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/surgeries/{{displacedId}}/reschedule", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{displacedId}}", "reschedule"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"theatreId\":{{ot2Id}},\"startTime\":\"{{newSlotStart}}\",\"endTime\":\"{{newSlotEnd}}\"}"
+        }
+      }
+    },
+    {
+      "name": "TC-NOT-01 Notification feed lists schedule events",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('notifications feed is non-empty and well-formed (OTMS-F-019/020)', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const list = pm.response.json();",
+              "  pm.expect(list).to.be.an('array').that.is.not.empty;",
+              "  list.forEach(function (n) {",
+              "    pm.expect(n).to.have.property('id');",
+              "    pm.expect(n).to.have.property('type');",
+              "    pm.expect(n).to.have.property('message');",
+              "    pm.expect(n).to.have.property('read');",
+              "  });",
+              "});",
+              "pm.test('reschedule event is notified', function () {",
+              "  const list = pm.response.json();",
+              "  const rescheduled = list.filter(function (n) { return n.type === 'SURGERY_RESCHEDULED' && n.message.indexOf('Mohan Verma') !== -1; });",
+              "  pm.expect(rescheduled.length).to.be.at.least(1);",
+              "  pm.collectionVariables.set('notificationId', list[0].id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/notifications", "host": ["{{baseUrl}}"], "path": ["api", "notifications"] }
+      }
+    },
+    {
+      "name": "TC-NOT-02 Mark a notification as read",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('notification is marked as read', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().read).to.eq(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "{{notificationId}}", "read"] }
+      }
+    },
+    {
+      "name": "TC-REP-01 Utilisation report data for today",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const d = new Date();",
+              "const today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());",
+              "pm.collectionVariables.set('todayDate', today);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('surgery list carries all utilisation report fields (OTMS-F-023)', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const list = pm.response.json();",
+              "  pm.expect(list).to.be.an('array').that.is.not.empty;",
+              "  list.forEach(function (s) {",
+              "    pm.expect(s).to.have.property('theatreName');",
+              "    pm.expect(s).to.have.property('startTime');",
+              "    pm.expect(s).to.have.property('endTime');",
+              "    pm.expect(s).to.have.property('status');",
+              "    pm.expect(s).to.have.property('emergency');",
+              "  });",
+              "});",
+              "pm.test('created surgery is reflected in the report data', function () {",
+              "  const list = pm.response.json();",
+              "  const created = list.filter(function (s) { return s.patientName === 'Postman Validation'; });",
+              "  pm.expect(created.length).to.be.at.least(1);",
+              "  pm.expect(created[0].theatreName).to.eq('OT-3');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/surgeries?date={{todayDate}}", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"], "query": [{ "key": "date", "value": "{{todayDate}}" }] }
+      }
     }
   ],
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
     { "key": "token", "value": "" },
-    { "key": "surgeryId", "value": "" }
+    { "key": "doctorToken", "value": "" },
+    { "key": "techToken", "value": "" },
+    { "key": "surgeryId", "value": "" },
+    { "key": "emergencyId", "value": "" },
+    { "key": "displacedId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "ot1Id", "value": "" },
+    { "key": "ot2Id", "value": "" },
+    { "key": "ot3Id", "value": "" },
+    { "key": "drRamId", "value": "" },
+    { "key": "drPriyaId", "value": "" },
+    { "key": "todayDate", "value": "" },
+    { "key": "createStart", "value": "" },
+    { "key": "createEnd", "value": "" },
+    { "key": "overlapStart", "value": "" },
+    { "key": "overlapEnd", "value": "" },
+    { "key": "clashStart", "value": "" },
+    { "key": "clashEnd", "value": "" },
+    { "key": "guardStart", "value": "" },
+    { "key": "guardEnd", "value": "" },
+    { "key": "reschedGuardStart", "value": "" },
+    { "key": "reschedGuardEnd", "value": "" },
+    { "key": "disabledStart", "value": "" },
+    { "key": "disabledEnd", "value": "" },
+    { "key": "newSlotStart", "value": "" },
+    { "key": "newSlotEnd", "value": "" }
   ]
 }
