@@ -3,6 +3,7 @@ package com.otms.service;
 import com.otms.dto.RescheduleRequest;
 import com.otms.dto.SurgeryRequest;
 import com.otms.dto.SurgeryResponse;
+import com.otms.model.NotificationType;
 import com.otms.model.Surgery;
 import com.otms.model.SurgeryStatus;
 import com.otms.model.Theatre;
@@ -28,13 +29,16 @@ public class SchedulingService {
     private final SurgeryRepository surgeryRepository;
     private final TheatreRepository theatreRepository;
     private final UserAccountRepository userAccountRepository;
+    private final NotificationService notificationService;
 
     public SchedulingService(SurgeryRepository surgeryRepository,
                              TheatreRepository theatreRepository,
-                             UserAccountRepository userAccountRepository) {
+                             UserAccountRepository userAccountRepository,
+                             NotificationService notificationService) {
         this.surgeryRepository = surgeryRepository;
         this.theatreRepository = theatreRepository;
         this.userAccountRepository = userAccountRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -72,7 +76,18 @@ public class SchedulingService {
         surgery.setNotes(request.notes());
         surgery.setStatus(SurgeryStatus.SCHEDULED);
 
-        return toResponse(surgeryRepository.save(surgery));
+        Surgery saved = surgeryRepository.save(surgery);
+
+        // OTMS-F-019 / OTMS-F-020: notify relevant users about schedule events.
+        notificationService.record(
+                request.emergency() ? NotificationType.EMERGENCY_SCHEDULED : NotificationType.SURGERY_SCHEDULED,
+                saved.getId(),
+                String.format("%s '%s' for %s in %s (%s - %s)",
+                        request.emergency() ? "Emergency surgery scheduled:" : "Surgery scheduled:",
+                        saved.getProcedureName(), saved.getPatientName(), theatre.getName(),
+                        saved.getStartTime(), saved.getEndTime()));
+
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -108,7 +123,15 @@ public class SchedulingService {
         Surgery surgery = surgeryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Surgery not found: " + id));
         surgery.setStatus(status);
-        return toResponse(surgeryRepository.save(surgery));
+        Surgery saved = surgeryRepository.save(surgery);
+
+        notificationService.record(
+                NotificationType.SURGERY_STATUS_CHANGED,
+                saved.getId(),
+                String.format("Surgery '%s' for %s is now %s",
+                        saved.getProcedureName(), saved.getPatientName(), status));
+
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -174,7 +197,17 @@ public class SchedulingService {
         surgery.setTheatre(theatre);
         surgery.setStartTime(request.startTime());
         surgery.setEndTime(request.endTime());
-        return toResponse(surgeryRepository.save(surgery));
+        Surgery saved = surgeryRepository.save(surgery);
+
+        notificationService.record(
+                NotificationType.SURGERY_RESCHEDULED,
+                saved.getId(),
+                String.format("Surgery '%s' for %s rescheduled to %s (%s - %s)%s",
+                        saved.getProcedureName(), saved.getPatientName(), theatre.getName(),
+                        saved.getStartTime(), saved.getEndTime(),
+                        saved.isEmergency() ? " — emergency case" : ""));
+
+        return toResponse(saved);
     }
 
     private String describeConflicts(List<Surgery> conflicts) {

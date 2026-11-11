@@ -37,6 +37,9 @@ class SchedulingServiceTest {
     @Mock
     private UserAccountRepository userAccountRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private SchedulingService schedulingService;
 
@@ -258,6 +261,66 @@ class SchedulingServiceTest {
                 2L, LocalDateTime.of(2030, 1, 11, 11, 0), LocalDateTime.of(2030, 1, 11, 9, 0))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("End time must be after start time");
+    }
+
+    @Test
+    void schedulingRecordsANotificationForTheNewSurgery() {
+        SurgeryRequest request = request(1L, 10L,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(ot1));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
+        when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        schedulingService.schedule(request);
+
+        verify(notificationService).record(eq(NotificationType.SURGERY_SCHEDULED), any(), anyString());
+    }
+
+    @Test
+    void emergencySchedulingRecordsAnEmergencyNotification() {
+        SurgeryRequest request = new SurgeryRequest("Patient X", "Emergency laparotomy", 10L, 1L,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0), true, null);
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(ot1));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
+        when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        schedulingService.schedule(request);
+
+        verify(notificationService).record(eq(NotificationType.EMERGENCY_SCHEDULED), any(), anyString());
+    }
+
+    @Test
+    void reschedulingRecordsARescheduleNotification() {
+        Surgery displaced = existingSurgery(61L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(surgeryRepository.findById(61L)).thenReturn(Optional.of(displaced));
+        when(theatreRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(ot2));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
+        when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        schedulingService.reschedule(61L, new com.otms.dto.RescheduleRequest(
+                2L, LocalDateTime.of(2030, 1, 11, 9, 0), LocalDateTime.of(2030, 1, 11, 11, 0)));
+
+        verify(notificationService).record(eq(NotificationType.SURGERY_RESCHEDULED), eq(61L), anyString());
+    }
+
+    @Test
+    void statusChangeRecordsANotification() {
+        Surgery surgery = existingSurgery(61L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(surgeryRepository.findById(61L)).thenReturn(Optional.of(surgery));
+        when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        schedulingService.updateStatus(61L, SurgeryStatus.IN_PROGRESS);
+
+        verify(notificationService).record(eq(NotificationType.SURGERY_STATUS_CHANGED), eq(61L), anyString());
     }
 
     private SurgeryRequest request(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {

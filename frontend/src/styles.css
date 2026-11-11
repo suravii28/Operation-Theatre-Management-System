@@ -223,6 +223,10 @@ p {
 
 /* ---------- Tables ---------- */
 
+.muted-row td {
+  opacity: 0.6;
+}
+
 .table-card {
   overflow-x: auto;
 }
