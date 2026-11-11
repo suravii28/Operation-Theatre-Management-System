@@ -66,6 +66,9 @@ export const api = {
   listDoctors: () => request('/api/staff?role=DOCTOR'),
   listSurgeries: (params = {}) => request(`/api/surgeries${query(params)}`),
   listEmergencies: () => request('/api/surgeries/emergencies'),
+  surgeryImpact: (id) => request(`/api/surgeries/${id}/impact`),
+  rescheduleSurgery: (id, payload) =>
+    request(`/api/surgeries/${id}/reschedule`, { method: 'POST', body: payload }),
   createSurgery: (surgery) => request('/api/surgeries', { method: 'POST', body: surgery }),
   updateStatus: (id, status) =>
     request(`/api/surgeries/${id}/status`, { method: 'PATCH', body: { status } }),

@@ -168,6 +168,98 @@ class SchedulingServiceTest {
         verify(surgeryRepository, never()).save(any(Surgery.class));
     }
 
+    @Test
+    void impactAnalysisFindsDisplacedNonEmergencySurgeries() {
+        Surgery emergency = existingSurgery(60L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        emergency.setEmergency(true);
+        Surgery routine = existingSurgery(61L, ot1, surgeon(11L, "Dr. Other"),
+                LocalDateTime.of(2030, 1, 10, 10, 0),
+                LocalDateTime.of(2030, 1, 10, 12, 0));
+        when(surgeryRepository.findById(60L)).thenReturn(Optional.of(emergency));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of(routine));
+
+        List<SurgeryResponse> impact = schedulingService.impactAnalysis(60L);
+
+        assertThat(impact).hasSize(1);
+        assertThat(impact.get(0).id()).isEqualTo(61L);
+    }
+
+    @Test
+    void impactAnalysisExcludesItselfAndOtherEmergencies() {
+        Surgery emergency = existingSurgery(60L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        emergency.setEmergency(true);
+        Surgery otherEmergency = existingSurgery(62L, ot1, surgeon(11L, "Dr. Other"),
+                LocalDateTime.of(2030, 1, 10, 10, 0),
+                LocalDateTime.of(2030, 1, 10, 12, 0));
+        otherEmergency.setEmergency(true);
+        when(surgeryRepository.findById(60L)).thenReturn(Optional.of(emergency));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any()))
+                .thenReturn(List.of(emergency, otherEmergency));
+
+        assertThat(schedulingService.impactAnalysis(60L)).isEmpty();
+    }
+
+    @Test
+    void impactAnalysisRejectsNonEmergencySurgery() {
+        Surgery routine = existingSurgery(61L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(surgeryRepository.findById(61L)).thenReturn(Optional.of(routine));
+
+        assertThatThrownBy(() -> schedulingService.impactAnalysis(61L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not an emergency case");
+    }
+
+    @Test
+    void rescheduleMovesSurgeryToConflictFreeSlot() {
+        Surgery displaced = existingSurgery(61L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(surgeryRepository.findById(61L)).thenReturn(Optional.of(displaced));
+        when(theatreRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(ot2));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
+        when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SurgeryResponse response = schedulingService.reschedule(61L, new com.otms.dto.RescheduleRequest(
+                2L, LocalDateTime.of(2030, 1, 11, 9, 0), LocalDateTime.of(2030, 1, 11, 11, 0)));
+
+        assertThat(response.theatreId()).isEqualTo(2L);
+        assertThat(response.startTime()).isEqualTo(LocalDateTime.of(2030, 1, 11, 9, 0));
+        assertThat(response.endTime()).isEqualTo(LocalDateTime.of(2030, 1, 11, 11, 0));
+    }
+
+    @Test
+    void rescheduleRejectedWhenNewSlotConflicts() {
+        Surgery displaced = existingSurgery(61L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(surgeryRepository.findById(61L)).thenReturn(Optional.of(displaced));
+        when(theatreRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(ot2));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any()))
+                .thenReturn(List.of(existingSurgery(50L, ot2, surgeon(11L, "Dr. Other"),
+                        LocalDateTime.of(2030, 1, 11, 8, 0),
+                        LocalDateTime.of(2030, 1, 11, 10, 0))));
+
+        assertThatThrownBy(() -> schedulingService.reschedule(61L, new com.otms.dto.RescheduleRequest(
+                2L, LocalDateTime.of(2030, 1, 11, 9, 0), LocalDateTime.of(2030, 1, 11, 11, 0))))
+                .isInstanceOf(SchedulingConflictException.class);
+    }
+
+    @Test
+    void rescheduleRejectedWhenEndBeforeStart() {
+        assertThatThrownBy(() -> schedulingService.reschedule(61L, new com.otms.dto.RescheduleRequest(
+                2L, LocalDateTime.of(2030, 1, 11, 11, 0), LocalDateTime.of(2030, 1, 11, 9, 0))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("End time must be after start time");
+    }
+
     private SurgeryRequest request(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {
         return new SurgeryRequest("Patient X", "Appendectomy", surgeonId, theatreId, start, end, false, null);
     }
