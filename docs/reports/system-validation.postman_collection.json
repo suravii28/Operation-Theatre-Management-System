@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "OTMS System Validation",
-    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01).",
+    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), equipment availability and maintenance (TC-RES-03/05), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -25,8 +25,23 @@
       ],
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"email\":\"admin@otms.local\",\"password\":\"Admin123!\"}"
@@ -48,8 +63,23 @@
       ],
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"email\":\"admin@otms.local\",\"password\":\"wrong-password\"}"
@@ -73,7 +103,16 @@
       ],
       "request": {
         "method": "GET",
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        }
       }
     },
     {
@@ -101,8 +140,22 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/theatres", "host": ["{{baseUrl}}"], "path": ["api", "theatres"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/theatres",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "theatres"
+          ]
+        }
       }
     },
     {
@@ -128,8 +181,28 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/staff?role=DOCTOR", "host": ["{{baseUrl}}"], "path": ["api", "staff"], "query": [{ "key": "role", "value": "DOCTOR" }] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/staff?role=DOCTOR",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "staff"
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "DOCTOR"
+            }
+          ]
+        }
       }
     },
     {
@@ -150,8 +223,22 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        }
       }
     },
     {
@@ -192,10 +279,25 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{token}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"patientName\":\"Postman Validation\",\"procedureName\":\"Validation cholecystectomy\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{createStart}}\",\"endTime\":\"{{createEnd}}\",\"emergency\":false}"
@@ -239,10 +341,25 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{token}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"patientName\":\"Overlap Patient\",\"procedureName\":\"Overlap procedure\",\"theatreId\":{{ot1Id}},\"leadSurgeonId\":{{drPriyaId}},\"startTime\":\"{{overlapStart}}\",\"endTime\":\"{{overlapEnd}}\",\"emergency\":false}"
@@ -284,10 +401,25 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{token}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"patientName\":\"Surgeon Clash\",\"procedureName\":\"Clash procedure\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{clashStart}}\",\"endTime\":\"{{clashEnd}}\",\"emergency\":false}"
@@ -319,8 +451,23 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/surgeries/emergencies", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "emergencies"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries/emergencies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries",
+            "emergencies"
+          ]
+        }
       }
     },
     {
@@ -342,11 +489,31 @@
       "request": {
         "method": "PATCH",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{token}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{surgeryId}}", "status"] },
-        "body": { "mode": "raw", "raw": "{\"status\":\"IN_PROGRESS\"}" }
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries",
+            "{{surgeryId}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"IN_PROGRESS\"}"
+        }
       }
     },
     {
@@ -369,8 +536,23 @@
       ],
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"email\":\"dr.ram@otms.local\",\"password\":\"Doctor123!\"}"
@@ -414,10 +596,25 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{doctorToken}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{doctorToken}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"patientName\":\"Doctor Denied\",\"procedureName\":\"Role guard probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{guardStart}}\",\"endTime\":\"{{guardEnd}}\",\"emergency\":false}"
@@ -459,10 +656,27 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{doctorToken}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{doctorToken}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/reschedule", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{surgeryId}}", "reschedule"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries/{{surgeryId}}/reschedule",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries",
+            "{{surgeryId}}",
+            "reschedule"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"theatreId\":{{ot2Id}},\"startTime\":\"{{reschedGuardStart}}\",\"endTime\":\"{{reschedGuardEnd}}\"}"
@@ -489,8 +703,23 @@
       ],
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"email\":\"tech@otms.local\",\"password\":\"Tech123!\"}"
@@ -518,11 +747,31 @@
       "request": {
         "method": "PATCH",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{techToken}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{techToken}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability", "host": ["{{baseUrl}}"], "path": ["api", "theatres", "{{ot3Id}}", "availability"] },
-        "body": { "mode": "raw", "raw": "{\"active\":false}" }
+        "url": {
+          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "theatres",
+            "{{ot3Id}}",
+            "availability"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"active\":false}"
+        }
       }
     },
     {
@@ -562,10 +811,25 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{token}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"patientName\":\"Disabled Theatre Patient\",\"procedureName\":\"Availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{disabledStart}}\",\"endTime\":\"{{disabledEnd}}\",\"emergency\":false}"
@@ -593,12 +857,416 @@
       "request": {
         "method": "PATCH",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{techToken}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{techToken}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability", "host": ["{{baseUrl}}"], "path": ["api", "theatres", "{{ot3Id}}", "availability"] },
-        "body": { "mode": "raw", "raw": "{\"active\":true}" }
+        "url": {
+          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "theatres",
+            "{{ot3Id}}",
+            "availability"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"active\":true}"
+        }
       }
+    },
+    {
+      "name": "Setup - Resolve seeded equipment IDs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('seeded equipment resolves and defaults to available only', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const items = pm.response.json();",
+              "  pm.expect(items.length).to.eq(3);",
+              "  const byName = {};",
+              "  items.forEach(function (e) { byName[e.name] = e; });",
+              "  pm.expect(byName['C-arm'].available).to.eq(true);",
+              "  pm.collectionVariables.set('cArmId', byName['C-arm'].id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/equipment",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "equipment"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Setup - Resolve maintenance equipment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('includeUnavailable lists the Heart-lung machine in maintenance', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const items = pm.response.json();",
+              "  pm.expect(items.length).to.eq(4);",
+              "  const machine = items.find(function (e) { return e.name === 'Heart-lung machine'; });",
+              "  pm.expect(machine.available).to.eq(false);",
+              "  pm.collectionVariables.set('heartLungId', machine.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/equipment?includeUnavailable=true",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "equipment"
+          ],
+          "query": [
+            {
+              "key": "includeUnavailable",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-RES-03 Scheduling with equipment in maintenance rejected",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('equipMaintStart', dayAt(1, 12, 0));",
+              "pm.collectionVariables.set('equipMaintEnd', dayAt(1, 13, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 409 when required equipment is in maintenance (OTMS-F-012)', function () {",
+              "  pm.response.to.have.status(409);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.message).to.include('equipment in maintenance');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Maintenance Probe\",\"procedureName\":\"Equipment availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{equipMaintStart}}\",\"endTime\":\"{{equipMaintEnd}}\",\"emergency\":false,\"equipmentIds\":[{{heartLungId}}]}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-RES-03 Scheduling with equipment in use rejected",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('equipInUseStart', dayAt(0, 14, 0));",
+              "pm.collectionVariables.set('equipInUseEnd', dayAt(0, 15, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('returns 409 when equipment is already in use by an overlapping surgery (OTMS-F-012)', function () {",
+              "  pm.response.to.have.status(409);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.message).to.include('equipment already in use');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Equipment Clash\",\"procedureName\":\"Equipment clash probe\",\"theatreId\":{{ot2Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{equipInUseStart}}\",\"endTime\":\"{{equipInUseEnd}}\",\"emergency\":false,\"equipmentIds\":[{{cArmId}}]}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-RES-05 Technician marks equipment available",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('technician toggles equipment out of maintenance (OTMS-F-022)', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.name).to.eq('Heart-lung machine');",
+              "  pm.expect(body.available).to.eq(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{techToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/equipment/{{heartLungId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "equipment",
+            "{{heartLungId}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"available\":true}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-RES-05 Scheduling succeeds with repaired equipment",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const pad = function (n) { return String(n).padStart(2, '0'); };",
+              "const dayAt = function (offsetDays, h, m) {",
+              "  const d = new Date();",
+              "  d.setDate(d.getDate() + offsetDays);",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('equipReadyStart', dayAt(1, 12, 0));",
+              "pm.collectionVariables.set('equipReadyEnd', dayAt(1, 13, 0));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('surgery is scheduled with the repaired equipment', function () {",
+              "  pm.expect([200, 201]).to.include(pm.response.code);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eq('SCHEDULED');",
+              "  pm.expect(body.equipmentNames).to.include('Heart-lung machine');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Repaired Equipment Probe\",\"procedureName\":\"Equipment availability probe\",\"theatreId\":{{ot2Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{equipReadyStart}}\",\"endTime\":\"{{equipReadyEnd}}\",\"emergency\":false,\"equipmentIds\":[{{heartLungId}}]}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-RES-05 Restore equipment maintenance state",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('equipment returns to maintenance state for the seed', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.available).to.eq(false);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{techToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/equipment/{{heartLungId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "equipment",
+            "{{heartLungId}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"available\":false}"
+        }
+      },
+      "response": []
     },
     {
       "name": "TC-EMG-03 Impact analysis identifies displaced surgery",
@@ -624,8 +1292,24 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/surgeries/{{emergencyId}}/impact", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{emergencyId}}", "impact"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries/{{emergencyId}}/impact",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries",
+            "{{emergencyId}}",
+            "impact"
+          ]
+        }
       }
     },
     {
@@ -669,10 +1353,27 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{token}}" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
         ],
-        "url": { "raw": "{{baseUrl}}/api/surgeries/{{displacedId}}/reschedule", "host": ["{{baseUrl}}"], "path": ["api", "surgeries", "{{displacedId}}", "reschedule"] },
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries/{{displacedId}}/reschedule",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries",
+            "{{displacedId}}",
+            "reschedule"
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\"theatreId\":{{ot2Id}},\"startTime\":\"{{newSlotStart}}\",\"endTime\":\"{{newSlotEnd}}\"}"
@@ -710,8 +1411,22 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/notifications", "host": ["{{baseUrl}}"], "path": ["api", "notifications"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/notifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notifications"
+          ]
+        }
       }
     },
     {
@@ -732,8 +1447,24 @@
       ],
       "request": {
         "method": "PATCH",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "{{notificationId}}", "read"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notifications",
+            "{{notificationId}}",
+            "read"
+          ]
+        }
       }
     },
     {
@@ -780,39 +1511,175 @@
       ],
       "request": {
         "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-        "url": { "raw": "{{baseUrl}}/api/surgeries?date={{todayDate}}", "host": ["{{baseUrl}}"], "path": ["api", "surgeries"], "query": [{ "key": "date", "value": "{{todayDate}}" }] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries?date={{todayDate}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ],
+          "query": [
+            {
+              "key": "date",
+              "value": "{{todayDate}}"
+            }
+          ]
+        }
       }
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "token", "value": "" },
-    { "key": "doctorToken", "value": "" },
-    { "key": "techToken", "value": "" },
-    { "key": "surgeryId", "value": "" },
-    { "key": "emergencyId", "value": "" },
-    { "key": "displacedId", "value": "" },
-    { "key": "notificationId", "value": "" },
-    { "key": "ot1Id", "value": "" },
-    { "key": "ot2Id", "value": "" },
-    { "key": "ot3Id", "value": "" },
-    { "key": "drRamId", "value": "" },
-    { "key": "drPriyaId", "value": "" },
-    { "key": "todayDate", "value": "" },
-    { "key": "createStart", "value": "" },
-    { "key": "createEnd", "value": "" },
-    { "key": "overlapStart", "value": "" },
-    { "key": "overlapEnd", "value": "" },
-    { "key": "clashStart", "value": "" },
-    { "key": "clashEnd", "value": "" },
-    { "key": "guardStart", "value": "" },
-    { "key": "guardEnd", "value": "" },
-    { "key": "reschedGuardStart", "value": "" },
-    { "key": "reschedGuardEnd", "value": "" },
-    { "key": "disabledStart", "value": "" },
-    { "key": "disabledEnd", "value": "" },
-    { "key": "newSlotStart", "value": "" },
-    { "key": "newSlotEnd", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "doctorToken",
+      "value": ""
+    },
+    {
+      "key": "techToken",
+      "value": ""
+    },
+    {
+      "key": "surgeryId",
+      "value": ""
+    },
+    {
+      "key": "emergencyId",
+      "value": ""
+    },
+    {
+      "key": "displacedId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "ot1Id",
+      "value": ""
+    },
+    {
+      "key": "ot2Id",
+      "value": ""
+    },
+    {
+      "key": "ot3Id",
+      "value": ""
+    },
+    {
+      "key": "drRamId",
+      "value": ""
+    },
+    {
+      "key": "drPriyaId",
+      "value": ""
+    },
+    {
+      "key": "todayDate",
+      "value": ""
+    },
+    {
+      "key": "createStart",
+      "value": ""
+    },
+    {
+      "key": "createEnd",
+      "value": ""
+    },
+    {
+      "key": "overlapStart",
+      "value": ""
+    },
+    {
+      "key": "overlapEnd",
+      "value": ""
+    },
+    {
+      "key": "clashStart",
+      "value": ""
+    },
+    {
+      "key": "clashEnd",
+      "value": ""
+    },
+    {
+      "key": "guardStart",
+      "value": ""
+    },
+    {
+      "key": "guardEnd",
+      "value": ""
+    },
+    {
+      "key": "reschedGuardStart",
+      "value": ""
+    },
+    {
+      "key": "reschedGuardEnd",
+      "value": ""
+    },
+    {
+      "key": "disabledStart",
+      "value": ""
+    },
+    {
+      "key": "disabledEnd",
+      "value": ""
+    },
+    {
+      "key": "newSlotStart",
+      "value": ""
+    },
+    {
+      "key": "newSlotEnd",
+      "value": ""
+    },
+    {
+      "key": "cArmId",
+      "value": ""
+    },
+    {
+      "key": "heartLungId",
+      "value": ""
+    },
+    {
+      "key": "equipMaintStart",
+      "value": ""
+    },
+    {
+      "key": "equipMaintEnd",
+      "value": ""
+    },
+    {
+      "key": "equipInUseStart",
+      "value": ""
+    },
+    {
+      "key": "equipInUseEnd",
+      "value": ""
+    },
+    {
+      "key": "equipReadyStart",
+      "value": ""
+    },
+    {
+      "key": "equipReadyEnd",
+      "value": ""
+    }
   ]
 }

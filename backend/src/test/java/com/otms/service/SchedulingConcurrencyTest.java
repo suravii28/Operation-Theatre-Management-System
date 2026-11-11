@@ -79,7 +79,7 @@ class SchedulingConcurrencyTest {
                             try {
                                 schedulingService.schedule(new SurgeryRequest(
                                         "Concurrent patient " + i, "Concurrency probe", surgeonId, theatreId,
-                                        start, end, false, null));
+                                        start, end, false, null, null));
                                 successes.incrementAndGet();
                             } catch (SchedulingConflictException ex) {
                                 conflicts.incrementAndGet();
