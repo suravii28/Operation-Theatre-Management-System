@@ -110,7 +110,7 @@ class SurgeryControllerSecurityTest {
                 5L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 1L, "OT-1",
                 java.time.LocalDateTime.of(2030, 1, 10, 9, 0),
                 java.time.LocalDateTime.of(2030, 1, 10, 11, 0),
-                com.otms.model.SurgeryStatus.SCHEDULED, false, null));
+                com.otms.model.SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/surgeries")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -169,7 +169,7 @@ class SurgeryControllerSecurityTest {
                         1L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 1L, "OT-1",
                         java.time.LocalDateTime.of(2030, 1, 10, 9, 0),
                         java.time.LocalDateTime.of(2030, 1, 10, 11, 0),
-                        com.otms.model.SurgeryStatus.IN_PROGRESS, false, null));
+                        com.otms.model.SurgeryStatus.IN_PROGRESS, false, null, List.of(), List.of()));
 
         mockMvc.perform(patch("/api/surgeries/1/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -212,7 +212,7 @@ class SurgeryControllerSecurityTest {
                 5L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 2L, "OT-2",
                 java.time.LocalDateTime.of(2030, 1, 11, 9, 0),
                 java.time.LocalDateTime.of(2030, 1, 11, 11, 0),
-                com.otms.model.SurgeryStatus.SCHEDULED, false, null));
+                com.otms.model.SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/surgeries/5/reschedule")
                         .contentType(MediaType.APPLICATION_JSON)
