@@ -94,7 +94,8 @@ describe('ReportsPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('No data yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No data for the selected date range.')).toBeInTheDocument();
+    expect(screen.getByText('No surgeries for the selected date range.')).toBeInTheDocument();
   });
 
   it('shows an error when the report request fails', async () => {
