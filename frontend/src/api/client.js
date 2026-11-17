@@ -59,7 +59,10 @@ function query(params) {
 export const api = {
   login: (email, password) =>
     request('/api/auth/login', { method: 'POST', body: { email, password } }),
-  listTheatres: () => request('/api/theatres'),
+  listTheatres: (includeInactive = false) =>
+    request(`/api/theatres${includeInactive ? '?includeInactive=true' : ''}`),
+  setTheatreAvailability: (id, active) =>
+    request(`/api/theatres/${id}/availability`, { method: 'PATCH', body: { active } }),
   listDoctors: () => request('/api/staff?role=DOCTOR'),
   listSurgeries: (params = {}) => request(`/api/surgeries${query(params)}`),
   listEmergencies: () => request('/api/surgeries/emergencies'),
