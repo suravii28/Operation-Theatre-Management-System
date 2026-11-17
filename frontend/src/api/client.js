@@ -1,3 +1,4 @@
+
 const TOKEN_KEY = 'otms.token';
 
 export function getToken() {
@@ -24,9 +25,16 @@ export function parseToken(token) {
 
 async function request(path, { method = 'GET', body } = {}) {
   const headers = {};
-  if (body) headers['Content-Type'] = 'application/json';
+
+  if (body) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   const response = await fetch(path, {
     method,
@@ -41,38 +49,93 @@ async function request(path, { method = 'GET', body } = {}) {
     const error = new Error(data?.message || `Request failed (${response.status})`);
     error.status = response.status;
     error.data = data;
-    if (response.status === 401) clearToken();
+
+    if (response.status === 401) {
+      clearToken();
+    }
+
     throw error;
   }
+
   return data;
 }
 
 function query(params) {
   const search = new URLSearchParams();
+
   Object.entries(params).forEach(([key, value]) => {
-    if (value) search.set(key, value);
+    if (value) {
+      search.set(key, value);
+    }
   });
+
   const encoded = search.toString();
   return encoded ? `?${encoded}` : '';
 }
 
 export const api = {
   login: (email, password) =>
-    request('/api/auth/login', { method: 'POST', body: { email, password } }),
+    request('/api/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    }),
+
+  // Theatre APIs
   listTheatres: (includeInactive = false) =>
     request(`/api/theatres${includeInactive ? '?includeInactive=true' : ''}`),
+
   setTheatreAvailability: (id, active) =>
-    request(`/api/theatres/${id}/availability`, { method: 'PATCH', body: { active } }),
+    request(`/api/theatres/${id}/availability`, {
+      method: 'PATCH',
+      body: { active },
+    }),
+
+  // Staff APIs
   listDoctors: () => request('/api/staff?role=DOCTOR'),
-  listSurgeries: (params = {}) => request(`/api/surgeries${query(params)}`),
-  listEmergencies: () => request('/api/surgeries/emergencies'),
-  surgeryImpact: (id) => request(`/api/surgeries/${id}/impact`),
+
+  // Fetch nurses for surgery assignment
+  listNurses: () => request('/api/staff?role=NURSE'),
+
+  // Surgery APIs
+  listSurgeries: (params = {}) =>
+    request(`/api/surgeries${query(params)}`),
+
+  listEmergencies: () =>
+    request('/api/surgeries/emergencies'),
+
+  surgeryImpact: (id) =>
+    request(`/api/surgeries/${id}/impact`),
+
   rescheduleSurgery: (id, payload) =>
-    request(`/api/surgeries/${id}/reschedule`, { method: 'POST', body: payload }),
-  createSurgery: (surgery) => request('/api/surgeries', { method: 'POST', body: surgery }),
-  updateSurgery: (id, surgery) => request(`/api/surgeries/${id}`, { method: 'PUT', body: surgery }),
+    request(`/api/surgeries/${id}/reschedule`, {
+      method: 'POST',
+      body: payload,
+    }),
+
+  createSurgery: (surgery) =>
+    request('/api/surgeries', {
+      method: 'POST',
+      body: surgery,
+    }),
+
+  updateSurgery: (id, surgery) =>
+    request(`/api/surgeries/${id}`, {
+      method: 'PUT',
+      body: surgery,
+    }),
+
   updateStatus: (id, status) =>
-    request(`/api/surgeries/${id}/status`, { method: 'PATCH', body: { status } }),
-  listNotifications: () => request('/api/notifications'),
-  markNotificationRead: (id) => request(`/api/notifications/${id}/read`, { method: 'PATCH' }),
+    request(`/api/surgeries/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+
+  // Notification APIs
+  listNotifications: () =>
+    request('/api/notifications'),
+
+  markNotificationRead: (id) =>
+    request(`/api/notifications/${id}/read`, {
+      method: 'PATCH',
+    }),
 };

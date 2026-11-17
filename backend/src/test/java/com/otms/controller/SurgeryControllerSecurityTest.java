@@ -1,8 +1,11 @@
+
 package com.otms.controller;
 
 import com.otms.config.JwtAuthenticationFilter;
 import com.otms.config.JwtService;
 import com.otms.config.SecurityConfig;
+import com.otms.dto.SurgeryResponse;
+import com.otms.model.SurgeryStatus;
 import com.otms.repository.UserAccountRepository;
 import com.otms.service.SchedulingConflictException;
 import com.otms.service.SchedulingService;
@@ -17,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SurgeryController.class)
-@Import({SecurityConfig.class, SurgeryControllerSecurityTest.TestConfig.class})
+@Import({ SecurityConfig.class, SurgeryControllerSecurityTest.TestConfig.class })
 class SurgeryControllerSecurityTest {
 
     @Autowired
@@ -75,8 +79,8 @@ class SurgeryControllerSecurityTest {
     @WithMockUser(roles = "DOCTOR")
     void invalidSurgeryPayloadIsRejected() throws Exception {
         mockMvc.perform(post("/api/surgeries")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"patientName\":\"\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"patientName\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"));
     }
@@ -88,17 +92,17 @@ class SurgeryControllerSecurityTest {
                 .thenThrow(new SchedulingConflictException("Scheduling conflict detected: [OT-1 occupied]"));
 
         mockMvc.perform(post("/api/surgeries")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "patientName": "Test Patient",
-                                  "procedureName": "Appendectomy",
-                                  "leadSurgeonId": 10,
-                                  "theatreId": 1,
-                                  "startTime": "2030-01-10T09:00",
-                                  "endTime": "2030-01-10T11:00"
-                                }
-                                """))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "patientName": "Test Patient",
+                            "procedureName": "Appendectomy",
+                            "leadSurgeonId": 10,
+                            "theatreId": 1,
+                            "startTime": "2030-01-10T09:00",
+                            "endTime": "2030-01-10T11:00"
+                        }
+                        """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Scheduling conflict detected: [OT-1 occupied]"));
     }
@@ -106,24 +110,25 @@ class SurgeryControllerSecurityTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void adminCanCreateSurgery() throws Exception {
-        when(schedulingService.schedule(any())).thenReturn(new com.otms.dto.SurgeryResponse(
+        when(schedulingService.schedule(any())).thenReturn(new SurgeryResponse(
                 5L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 1L, "OT-1",
-                java.time.LocalDateTime.of(2030, 1, 10, 9, 0),
-                java.time.LocalDateTime.of(2030, 1, 10, 11, 0),
-                com.otms.model.SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
+                null, null,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0),
+                SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/surgeries")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "patientName": "Test Patient",
-                                  "procedureName": "Appendectomy",
-                                  "leadSurgeonId": 10,
-                                  "theatreId": 1,
-                                  "startTime": "2030-01-10T09:00",
-                                  "endTime": "2030-01-10T11:00"
-                                }
-                                """))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "patientName": "Test Patient",
+                            "procedureName": "Appendectomy",
+                            "leadSurgeonId": 10,
+                            "theatreId": 1,
+                            "startTime": "2030-01-10T09:00",
+                            "endTime": "2030-01-10T11:00"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.patientName").value("Test Patient"));
     }
@@ -132,17 +137,17 @@ class SurgeryControllerSecurityTest {
     @WithMockUser(roles = "DOCTOR")
     void doctorCannotCreateSurgery() throws Exception {
         mockMvc.perform(post("/api/surgeries")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "patientName": "Test Patient",
-                                  "procedureName": "Appendectomy",
-                                  "leadSurgeonId": 10,
-                                  "theatreId": 1,
-                                  "startTime": "2030-01-10T09:00",
-                                  "endTime": "2030-01-10T11:00"
-                                }
-                                """))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "patientName": "Test Patient",
+                            "procedureName": "Appendectomy",
+                            "leadSurgeonId": 10,
+                            "theatreId": 1,
+                            "startTime": "2030-01-10T09:00",
+                            "endTime": "2030-01-10T11:00"
+                        }
+                        """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Access denied for your role"));
 
@@ -153,8 +158,8 @@ class SurgeryControllerSecurityTest {
     @WithMockUser(roles = "NURSE")
     void nurseCannotChangeSurgeryStatus() throws Exception {
         mockMvc.perform(patch("/api/surgeries/1/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"IN_PROGRESS\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"IN_PROGRESS\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Access denied for your role"));
 
@@ -164,16 +169,17 @@ class SurgeryControllerSecurityTest {
     @Test
     @WithMockUser(roles = "DOCTOR")
     void doctorCanChangeSurgeryStatus() throws Exception {
-        when(schedulingService.updateStatus(1L, com.otms.model.SurgeryStatus.IN_PROGRESS))
-                .thenReturn(new com.otms.dto.SurgeryResponse(
+        when(schedulingService.updateStatus(1L, SurgeryStatus.IN_PROGRESS))
+                .thenReturn(new SurgeryResponse(
                         1L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 1L, "OT-1",
-                        java.time.LocalDateTime.of(2030, 1, 10, 9, 0),
-                        java.time.LocalDateTime.of(2030, 1, 10, 11, 0),
-                        com.otms.model.SurgeryStatus.IN_PROGRESS, false, null, List.of(), List.of()));
+                        null, null,
+                        LocalDateTime.of(2030, 1, 10, 9, 0),
+                        LocalDateTime.of(2030, 1, 10, 11, 0),
+                        SurgeryStatus.IN_PROGRESS, false, null, List.of(), List.of()));
 
         mockMvc.perform(patch("/api/surgeries/1/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"IN_PROGRESS\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"IN_PROGRESS\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
     }
@@ -192,14 +198,14 @@ class SurgeryControllerSecurityTest {
     @WithMockUser(roles = "DOCTOR")
     void doctorCannotRescheduleSurgery() throws Exception {
         mockMvc.perform(post("/api/surgeries/5/reschedule")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "theatreId": 2,
-                                  "startTime": "2030-01-11T09:00",
-                                  "endTime": "2030-01-11T11:00"
-                                }
-                                """))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "theatreId": 2,
+                            "startTime": "2030-01-11T09:00",
+                            "endTime": "2030-01-11T11:00"
+                        }
+                        """))
                 .andExpect(status().isForbidden());
 
         verify(schedulingService, never()).reschedule(any(), any());
@@ -208,21 +214,22 @@ class SurgeryControllerSecurityTest {
     @Test
     @WithMockUser(roles = "COORDINATOR")
     void coordinatorCanRescheduleSurgery() throws Exception {
-        when(schedulingService.reschedule(any(), any())).thenReturn(new com.otms.dto.SurgeryResponse(
+        when(schedulingService.reschedule(any(), any())).thenReturn(new SurgeryResponse(
                 5L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 2L, "OT-2",
-                java.time.LocalDateTime.of(2030, 1, 11, 9, 0),
-                java.time.LocalDateTime.of(2030, 1, 11, 11, 0),
-                com.otms.model.SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
+                null, null,
+                LocalDateTime.of(2030, 1, 11, 9, 0),
+                LocalDateTime.of(2030, 1, 11, 11, 0),
+                SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/surgeries/5/reschedule")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "theatreId": 2,
-                                  "startTime": "2030-01-11T09:00",
-                                  "endTime": "2030-01-11T11:00"
-                                }
-                                """))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "theatreId": 2,
+                            "startTime": "2030-01-11T09:00",
+                            "endTime": "2030-01-11T11:00"
+                        }
+                        """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.theatreId").value(2));
     }

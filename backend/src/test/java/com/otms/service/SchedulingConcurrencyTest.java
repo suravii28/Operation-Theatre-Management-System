@@ -1,3 +1,4 @@
+
 package com.otms.service;
 
 import com.otms.dto.SurgeryRequest;
@@ -24,12 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * TC-Conc-01 / OTMS-NF-006: simultaneous scheduling attempts for the same theatre
- * slot must never produce a double booking. The pessimistic row locks in
- * {@link SchedulingService#schedule} serialise the competing transactions, so
- * exactly one request succeeds and the rest are rejected with a conflict.
- */
 @SpringBootTest
 class SchedulingConcurrencyTest {
 
@@ -52,10 +47,16 @@ class SchedulingConcurrencyTest {
         Theatre theatre = theatreRepository.findAll().stream()
                 .filter(t -> "CONC-OT".equals(t.getName()))
                 .findFirst()
-                .orElseGet(() -> theatreRepository.save(new Theatre("CONC-OT", "Concurrency Test")));
+                .orElseGet(() -> theatreRepository.save(
+                        new Theatre("CONC-OT", "Concurrency Test")));
+
         UserAccount surgeon = userAccountRepository.findByEmail("conc.surgeon@otms.local")
                 .orElseGet(() -> userAccountRepository.save(
-                        new UserAccount("conc.surgeon@otms.local", "unused", "Dr. Conc Test", Role.DOCTOR)));
+                        new UserAccount("conc.surgeon@otms.local", "unused",
+                                "Dr. Conc Test", Role.DOCTOR)));
+
+        UserAccount nurse = userAccountRepository.findByEmail("nurse@otms.local")
+                .orElseThrow(() -> new IllegalStateException("Seeded nurse not found"));
 
         for (int round = 0; round < 5; round++) {
             LocalDateTime start = day.atTime(8, 0).plusHours(round * 2);
@@ -69,21 +70,33 @@ class SchedulingConcurrencyTest {
 
             Long theatreId = theatre.getId();
             Long surgeonId = surgeon.getId();
+            Long nurseId = nurse.getId();
 
             ExecutorService pool = Executors.newFixedThreadPool(threads);
+
             try {
                 List<Future<Void>> jobs = java.util.stream.IntStream.range(0, threads)
                         .mapToObj(i -> pool.submit((java.util.concurrent.Callable<Void>) () -> {
                             ready.countDown();
                             startGun.await();
+
                             try {
                                 schedulingService.schedule(new SurgeryRequest(
-                                        "Concurrent patient " + i, "Concurrency probe", surgeonId, theatreId,
-                                        start, end, false, null, null));
+                                        "Concurrent patient " + i,
+                                        "Concurrency probe",
+                                        surgeonId,
+                                        theatreId,
+                                        nurseId,
+                                        start,
+                                        end,
+                                        false,
+                                        null,
+                                        null));
                                 successes.incrementAndGet();
                             } catch (SchedulingConflictException ex) {
                                 conflicts.incrementAndGet();
                             }
+
                             return null;
                         }))
                         .toList();
@@ -91,7 +104,9 @@ class SchedulingConcurrencyTest {
                 if (!ready.await(10, TimeUnit.SECONDS)) {
                     throw new IllegalStateException("workers did not start");
                 }
+
                 startGun.countDown();
+
                 for (Future<Void> job : jobs) {
                     job.get(30, TimeUnit.SECONDS);
                 }
@@ -99,10 +114,17 @@ class SchedulingConcurrencyTest {
                 pool.shutdownNow();
             }
 
-            assertThat(successes.get()).as("round %d: exactly one booking wins the slot", round).isEqualTo(1);
-            assertThat(conflicts.get()).as("round %d: everyone else gets a conflict", round).isEqualTo(threads - 1);
+            assertThat(successes.get())
+                    .as("round %d: exactly one booking wins the slot", round)
+                    .isEqualTo(1);
+
+            assertThat(conflicts.get())
+                    .as("round %d: everyone else gets a conflict", round)
+                    .isEqualTo(threads - 1);
+
             assertThat(surgeryRepository.findOverlapping(
-                            List.of(SurgeryStatus.SCHEDULED, SurgeryStatus.IN_PROGRESS), start, end))
+                    List.of(SurgeryStatus.SCHEDULED, SurgeryStatus.IN_PROGRESS),
+                    start, end))
                     .as("round %d: database still holds exactly one surgery for the slot", round)
                     .hasSize(1);
         }

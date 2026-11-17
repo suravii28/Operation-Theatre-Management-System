@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client.js';
 import ConflictBadge from '../components/ConflictBadge.jsx';
@@ -11,6 +12,7 @@ export default function SurgeriesPage() {
   const [surgeries, setSurgeries] = useState([]);
   const [theatres, setTheatres] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [nurses, setNurses] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingSurgery, setEditingSurgery] = useState(null);
   const [formError, setFormError] = useState('');
@@ -21,7 +23,11 @@ export default function SurgeriesPage() {
   const load = useCallback(() => {
     setLoading(true);
     api
-      .listSurgeries({ date: filters.date || undefined, theatreId: filters.theatreId || undefined, status: filters.status || undefined })
+      .listSurgeries({
+        date: filters.date || undefined,
+        theatreId: filters.theatreId || undefined,
+        status: filters.status || undefined,
+      })
       .then(setSurgeries)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -34,6 +40,7 @@ export default function SurgeriesPage() {
   useEffect(() => {
     api.listTheatres().then(setTheatres).catch(() => {});
     api.listDoctors().then(setDoctors).catch(() => {});
+    api.listNurses().then(setNurses).catch(() => {});
   }, []);
 
   const conflictingIds = useMemo(() => findConflictingIds(surgeries), [surgeries]);
@@ -44,11 +51,12 @@ export default function SurgeriesPage() {
     try {
       if (editingSurgery) await api.updateSurgery(editingSurgery.id, payload);
       else await api.createSurgery(payload);
+
       setShowForm(false);
       setEditingSurgery(null);
       load();
     } catch (err) {
-      setFormError(err.status === 409 ? err.message : err.message || 'Failed to schedule surgery.');
+      setFormError(err.message || 'Failed to schedule surgery.');
     } finally {
       setSubmitting(false);
     }
@@ -97,10 +105,20 @@ export default function SurgeriesPage() {
       </div>
 
       {(showForm || editingSurgery) ? (
-        <SurgeryForm theatres={theatres} doctors={doctors} initialSurgery={editingSurgery}
-          onSubmit={handleSave} submitting={submitting}
-          onCancel={() => { setShowForm(false); setEditingSurgery(null); }} />
+        <SurgeryForm
+          theatres={theatres}
+          doctors={doctors}
+          nurses={nurses}
+          initialSurgery={editingSurgery}
+          onSubmit={handleSave}
+          submitting={submitting}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingSurgery(null);
+          }}
+        />
       ) : null}
+
       {formError ? <p className="banner-error" role="alert">{formError}</p> : null}
 
       {loading ? <p>Loading…</p> : null}
@@ -120,6 +138,7 @@ export default function SurgeriesPage() {
                   <th>Procedure</th>
                   <th>Theatre</th>
                   <th>Lead surgeon</th>
+                  <th>Assigned nurse</th>
                   <th>Status</th>
                   <th>Flags</th>
                   <th>Actions</th>
@@ -134,6 +153,7 @@ export default function SurgeriesPage() {
                     <td>{surgery.procedureName}</td>
                     <td>{surgery.theatreName}</td>
                     <td>{surgery.leadSurgeonName}</td>
+                    <td>{surgery.assignedNurseName || '—'}</td>
                     <td>
                       <StatusBadge status={surgery.status} />
                     </td>
@@ -143,9 +163,17 @@ export default function SurgeriesPage() {
                     </td>
                     <td>
                       {['SCHEDULED', 'IN_PROGRESS'].includes(surgery.status) ? (
-                        <button type="button" className="btn btn-small" onClick={() => {
-                          setShowForm(false); setEditingSurgery(surgery); setFormError('');
-                        }}>Edit</button>
+                        <button
+                          type="button"
+                          className="btn btn-small"
+                          onClick={() => {
+                            setShowForm(false);
+                            setEditingSurgery(surgery);
+                            setFormError('');
+                          }}
+                        >
+                          Edit
+                        </button>
                       ) : <span className="muted">—</span>}
                     </td>
                   </tr>
