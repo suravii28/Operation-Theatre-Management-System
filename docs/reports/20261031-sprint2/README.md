@@ -1,19 +1,20 @@
-# OTMS Test Reports — Sprint-2 run (2026-10-31)
+# OTMS Test Reports — Sprint-2 run (2026-10-31, frontend added 2026-11-04)
 
-Generated from `main` at commit 578986c (backend) with `./scripts/generate-reports.sh`
-for the backend portion; the frontend coverage section is added when the frontend
-PR merges. System validation was executed with Newman against a live backend.
+Generated from `main` with `./scripts/generate-reports.sh` (backend) and
+`npm run test:coverage` (frontend). System validation was executed with Newman
+against a live backend.
 
 ## Summary
 
 | Report | Deliverable | Result |
 |---|---|---|
 | Unit Test Report (backend) | Part-3 2(b)i | 4 test classes, all passing — `unit-backend/surefire-reports/` |
-| Unit Test Report (frontend) | Part-3 2(b)i | pending frontend merge — will appear under `unit-frontend/` |
+| Unit Test Report (frontend) | Part-3 2(b)i | 4 test files, **10 tests passed** — `unit-frontend/vitest-summary.txt` |
 | System Validation Report | Part-3 2(b)ii | 9 requests / 9 assertions, **0 failures** — `system-validation/results.json` |
 | Code Coverage Report (backend) | Part-3 2(b)iii | **70.9%** line coverage — `backend-jacoco/index.html` |
 | Branch Coverage Report (backend) | Part-3 2(b)iv | **42.9%** — JaCoCo "Branches" column, `backend-jacoco/jacoco.csv` |
-| Code/Branch Coverage (frontend) | Part-3 2(b)iii–iv | 80% statements / 70% branches (v8, from earlier run) — added under `frontend-coverage/` |
+| Code Coverage Report (frontend) | Part-3 2(b)iii | **81.9%** lines / **80%** statements — `frontend-coverage/index.html` |
+| Branch Coverage Report (frontend) | Part-3 2(b)iv | **64.15%** branches — same report, "Branches" column |
 
 ## Backend classes under test
 
