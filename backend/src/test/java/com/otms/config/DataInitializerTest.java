@@ -5,15 +5,22 @@ import com.otms.service.SchedulingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Verifies the seeded emergency-impact scenario used by the system validation
  * suite (TC-EMG-02/TC-EMG-03): the seeded emergency case in OT-1 displaces the
  * seeded routine surgery sharing its slot, so impact analysis returns it.
+ *
+ * Demo seed data is intentionally disabled in the prod profile, so these
+ * seed-specific checks are skipped when the PostgreSQL production-profile
+ * integration suite runs.
  */
 @SpringBootTest
 class DataInitializerTest {
@@ -21,8 +28,18 @@ class DataInitializerTest {
     @Autowired
     private SchedulingService schedulingService;
 
+    @Autowired
+    private Environment environment;
+
+    private void assumeDemoSeedDataIsEnabled() {
+        assumeFalse(Arrays.asList(environment.getActiveProfiles()).contains("prod"),
+                "Demo seed data is disabled in the prod profile");
+    }
+
     @Test
     void seededEmergencyHasADeterministicDisplacedSurgery() {
+        assumeDemoSeedDataIsEnabled();
+
         List<SurgeryResponse> emergencies = schedulingService.listEmergencies();
 
         SurgeryResponse emergency = emergencies.stream()
@@ -39,6 +56,8 @@ class DataInitializerTest {
 
     @Test
     void seededSurgeonDoubleBookingExistsForConflictDemo() {
+        assumeDemoSeedDataIsEnabled();
+
         List<SurgeryResponse> all = schedulingService.list(null, null, null);
 
         long drRamToday = all.stream()
