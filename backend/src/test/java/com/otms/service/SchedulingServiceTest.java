@@ -1,6 +1,7 @@
 package com.otms.service;
 
 import com.otms.dto.SurgeryRequest;
+import com.otms.service.AuditService;
 import com.otms.dto.SurgeryResponse;
 import com.otms.model.*;
 import com.otms.repository.SurgeryRepository;
@@ -35,6 +36,9 @@ class SchedulingServiceTest {
 
     @Mock
     private UserAccountRepository userAccountRepository;
+
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private SchedulingService schedulingService;

@@ -1,5 +1,6 @@
 package com.otms.controller;
 
+import com.otms.service.AuditService;
 import com.otms.config.JwtService;
 import com.otms.dto.LoginRequest;
 import com.otms.dto.LoginResponse;
@@ -10,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,37 +23,76 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private final AuditService auditService;
     private final AuthenticationManager authenticationManager;
     private final UserAccountRepository userAccountRepository;
     private final JwtService jwtService;
 
-    public AuthController(AuthenticationManager authenticationManager,
-                          UserAccountRepository userAccountRepository,
-                          JwtService jwtService) {
+    public AuthController(
+            AuthenticationManager authenticationManager,
+            UserAccountRepository userAccountRepository,
+            JwtService jwtService,
+            AuditService auditService) {
+
         this.authenticationManager = authenticationManager;
         this.userAccountRepository = userAccountRepository;
         this.jwtService = jwtService;
+        this.auditService = auditService;
     }
 
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+                    new UsernamePasswordAuthenticationToken(
+                            request.email(), request.password()
+                    )
+            );
         } catch (BadCredentialsException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+
+            auditService.log(
+                    request.email(),
+                    "LOGIN_FAILURE",
+                    "AUTH",
+                    null,
+                    "Failed login attempt"
+            );
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid email or password"
+            );
         }
 
         UserAccount user = userAccountRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid email or password"
+                ));
 
-        String token = jwtService.generateToken(user.getEmail(), user.getName(), user.getRole().name());
+        auditService.log(
+                user.getEmail(),
+                "LOGIN_SUCCESS",
+                "AUTH",
+                user.getId(),
+                "User logged in successfully"
+        );
+
+        String token = jwtService.generateToken(
+                user.getEmail(),
+                user.getName(),
+                user.getRole().name()
+        );
+
         return new LoginResponse(token, user.getName(), user.getRole());
     }
 
     @PostMapping("/register")
     public Map<String, String> registerPlaceholder() {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED,
-                "Self-registration is disabled. Ask an administrator to create accounts.");
+        throw new ResponseStatusException(
+                HttpStatus.NOT_IMPLEMENTED,
+                "Self-registration is disabled. Ask an administrator to create accounts."
+        );
     }
 }

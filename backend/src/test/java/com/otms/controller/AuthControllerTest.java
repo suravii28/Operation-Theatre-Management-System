@@ -1,5 +1,6 @@
 package com.otms.controller;
 
+import com.otms.service.AuditService;
 import com.otms.config.JwtService;
 import com.otms.model.Role;
 import com.otms.model.UserAccount;
@@ -38,6 +39,8 @@ class AuthControllerTest {
     @MockBean
     private JwtService jwtService;
 
+    @MockBean
+    private AuditService auditService;
     @Test
     void loginReturnsTokenForValidCredentials() throws Exception {
         UserAccount user = new UserAccount("admin@otms.local", "hash", "Asha Admin", Role.ADMIN);

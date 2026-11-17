@@ -27,13 +27,15 @@ public class SchedulingService {
     private final SurgeryRepository surgeryRepository;
     private final TheatreRepository theatreRepository;
     private final UserAccountRepository userAccountRepository;
+    private final AuditService auditService;
 
     public SchedulingService(SurgeryRepository surgeryRepository,
                              TheatreRepository theatreRepository,
-                             UserAccountRepository userAccountRepository) {
+                             UserAccountRepository userAccountRepository, AuditService auditService) {
         this.surgeryRepository = surgeryRepository;
         this.theatreRepository = theatreRepository;
         this.userAccountRepository = userAccountRepository;
+	this.auditService = auditService;
     }
 
     @Transactional
@@ -71,7 +73,25 @@ public class SchedulingService {
         surgery.setNotes(request.notes());
         surgery.setStatus(SurgeryStatus.SCHEDULED);
 
-        return toResponse(surgeryRepository.save(surgery));
+        Surgery saved = surgeryRepository.save(surgery);
+
+auditService.logCurrentUser(
+        "SURGERY_CREATED",
+        "SURGERY",
+        saved.getId(),
+        "Surgery scheduled"
+);
+
+if (saved.isEmergency()) {
+    auditService.logCurrentUser(
+            "EMERGENCY_PRIORITIZED",
+            "SURGERY",
+            saved.getId(),
+            "Emergency priority enabled"
+    );
+}
+
+return toResponse(saved);
     }
 
     @Transactional
@@ -102,6 +122,12 @@ public class SchedulingService {
             throw new SchedulingConflictException(describeConflicts(conflicts));
         }
 
+        boolean wasEmergency = surgery.isEmergency();
+        boolean scheduleChanged = !surgery.getStartTime().equals(request.startTime())
+                || !surgery.getEndTime().equals(request.endTime())
+                || !surgery.getTheatre().getId().equals(request.theatreId())
+                || !surgery.getLeadSurgeon().getId().equals(request.leadSurgeonId());
+
         surgery.setPatientName(request.patientName());
         surgery.setProcedureName(request.procedureName());
         surgery.setLeadSurgeon(surgeon);
@@ -110,7 +136,20 @@ public class SchedulingService {
         surgery.setEndTime(request.endTime());
         surgery.setEmergency(request.emergency());
         surgery.setNotes(request.notes());
-        return toResponse(surgeryRepository.save(surgery));
+
+        Surgery saved = surgeryRepository.save(surgery);
+        auditService.logCurrentUser(
+                scheduleChanged ? "SURGERY_RESCHEDULED" : "SURGERY_UPDATED",
+                "SURGERY", saved.getId(),
+                scheduleChanged ? "Surgery schedule changed" : "Surgery details updated");
+        if (!wasEmergency && saved.isEmergency()) {
+            auditService.logCurrentUser("EMERGENCY_PRIORITIZED", "SURGERY",
+                    saved.getId(), "Emergency priority enabled");
+        } else if (wasEmergency && !saved.isEmergency()) {
+            auditService.logCurrentUser("EMERGENCY_PRIORITY_REMOVED", "SURGERY",
+                    saved.getId(), "Emergency priority removed");
+        }
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -145,8 +184,16 @@ public class SchedulingService {
     public SurgeryResponse updateStatus(Long id, SurgeryStatus status) {
         Surgery surgery = surgeryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Surgery not found: " + id));
+        SurgeryStatus previousStatus = surgery.getStatus();
         surgery.setStatus(status);
-        return toResponse(surgeryRepository.save(surgery));
+        Surgery saved = surgeryRepository.save(surgery);
+        if (status != previousStatus) {
+            String action = status == SurgeryStatus.CANCELLED
+                    ? "SURGERY_CANCELLED" : "SURGERY_STATUS_CHANGED";
+            auditService.logCurrentUser(action, "SURGERY", saved.getId(),
+                    "Status changed from " + previousStatus + " to " + status);
+        }
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
