@@ -10,6 +10,9 @@ export default function TheatresPage() {
   const canManage = CAN_MANAGE_AVAILABILITY.includes(user?.role);
   const [theatres, setTheatres] = useState([]);
   const [surgeries, setSurgeries] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(todayInputValue);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [bookingsError, setBookingsError] = useState('');
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
 
@@ -18,11 +21,22 @@ export default function TheatresPage() {
     request
       .then(setTheatres)
       .catch((err) => setError(err.message));
-    api
-      .listSurgeries({ date: todayInputValue() })
-      .then(setSurgeries)
-      .catch(() => {});
   }, [canManage]);
+
+  useEffect(() => {
+    let active = true;
+    api.listSurgeries({ date: selectedDate })
+      .then((data) => { if (active) { setSurgeries(data); setBookingsError(''); } })
+      .catch((err) => { if (active) { setSurgeries([]); setBookingsError(err.message); } })
+      .finally(() => { if (active) setBookingsLoading(false); });
+    return () => { active = false; };
+  }, [selectedDate]);
+
+  function changeDate(event) {
+    setSelectedDate(event.target.value);
+    setBookingsLoading(true);
+    setBookingsError('');
+  }
 
   useEffect(() => {
     load();
@@ -46,10 +60,17 @@ export default function TheatresPage() {
     <section>
       <div className="page-header">
         <h1>Theatres</h1>
-        <p>Occupancy per operation theatre for today.</p>
+        <p>View bookings and occupancy for a selected date.</p>
+      </div>
+
+      <div className="card">
+        <label htmlFor="theatre-booking-date">Booking date</label>
+        <input id="theatre-booking-date" type="date" value={selectedDate} onChange={changeDate} />
       </div>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {bookingsError ? <p className="form-error" role="alert">Could not load bookings: {bookingsError}</p> : null}
+      {bookingsLoading ? <p role="status">Loading bookings…</p> : null}
       {actionError ? <p className="banner-error" role="alert">{actionError}</p> : null}
 
       <div className="card-grid">
@@ -62,9 +83,9 @@ export default function TheatresPage() {
                 <span className="role-chip">{theatre.speciality}</span>
               </div>
               <p>
-                {bookings.length} booking{bookings.length === 1 ? '' : 's'} today
+                {bookingsLoading ? 'Loading bookings…' : `${bookings.length} booking${bookings.length === 1 ? '' : 's'} on selected date`}
               </p>
-              {bookings.length === 0 ? (
+              {bookingsLoading || bookingsError ? null : bookings.length === 0 ? (
                 <p className="muted">Available all day.</p>
               ) : (
                 <ul className="booking-list">
