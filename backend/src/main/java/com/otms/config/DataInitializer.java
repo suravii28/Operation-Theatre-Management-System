@@ -20,143 +20,160 @@ import java.util.List;
 @Profile("!prod")
 public class DataInitializer implements ApplicationRunner {
 
-            priate 
+        private final UserAccountRepository userRepository;
         private final TheatreRepository theatreRepository;
         private final SurgeryRepository surgeryRepository;
-        private final EquipmentRepository equipmentReposit
+        private final EquipmentRepository equipmentRepository;
         private final PasswordEncoder passwordEncoder;
-        
 
-                               TheatreRepository theatreRepository,
+        public DataInitializer(
+                        UserAccountRepository userRepository,
+                        TheatreRepository theatreRepository,
                         SurgeryRepository surgeryRepository,
-                        EquipmentRepository equipmentReposit
+                        EquipmentRepository equipmentRepository,
                         PasswordEncoder passwordEncoder) {
-                         = userRepository;
-                this.theatreRepository = theatreRepos
+                this.userRepository = userRepository;
+                this.theatreRepository = theatreRepository;
                 this.surgeryRepository = surgeryRepository;
-                this.equipmentRepository = equipmentReposit
+                this.equipmentRepository = equipmentRepository;
                 this.passwordEncoder = passwordEncoder;
-                
-            @Ov
+        }
 
-        ic void run(ApplicationArguments args) {
-        user("admin@otms.local", "Admin123!", "Asha Admin", Role.ADMIN);
-        user("coordinator@otms.local", "Coord123!", "Kiran Coordinator", Role.COORDINATOR);
-        UserAccount drRam = user("dr.ram@otms.local", "Doctor123!", "Dr. Ram Sharma", Role.DOCTOR);
-        UserAccount drPriya = user("dr.priya@otms.local", "Doctor123!", "Dr. Priya Nair", Role.DOCTOR);
+        @Override
+        public void run(ApplicationArguments args) {
+                user("admin@otms.local", "Admin123!", "Asha Admin", Role.ADMIN);
+                user("coordinator@otms.local", "Coord123!", "Kiran Coordinator", Role.COORDINATOR);
 
-        // Seed nurse and technician accounts.
-        UserAccount nurse = user("nurse@otms.local", "Nurse123!", "Meera Nurse", Role.NURSE);
-        user("tech@otms.local", "Tech123!", "Arun Technician", Role.TECHNICIAN);
+                UserAccount drRam = user(
+                                "dr.ram@otms.local", "Doctor123!", "Dr. Ram Sharma", Role.DOCTOR);
 
-        Theatre ot1 = theatre("OT-1", "General Surgery");
-        Theatre ot2 = theatre("OT-2", "Cardiac");
-        Theatre ot3 = theatre("OT-3", "Orthopaedic");
-       Equi pmet lapa
+                UserAccount drPriya = user(
+                                "dr.priya@otms.local", "Doctor123!", "Dr. Priya Nair", Role.DOCTOR);
 
-        oscope = 
-        quipment("Laparoscope",
-        "Imaging", true);
-        Equipment cArm = equipment("C-arm", "Imaging", true);
-        Equipment defibrillator = equipment("Defibrillator", "Monitoring", true);
+                UserAccount nurse = user(
+                                "nurse@otms.local", "Nurse123!", "Meera Nurse", Role.NURSE);
 
-        // In maintenance — demonstrates the equipment availability check.
-        equipment("Heart-lung machine", "Perfusion", false);
+                user("tech@otms.local", "Tech123!", "Arun Technician", Role.TECHNICIAN);
 
-        LocalDate today = LocalDate.now();
+                Theatre ot1 = theatre("OT-1", "General Surgery");
+                Theatre ot2 = theatre("OT-2", "Cardiac");
+                Theatre ot3 = theatre("OT-3", "Orthopaedic");
 
-        // Deliberate surgeon double-booking for the demo conflict badge.
-        // Meera Nurse is assigned to Ravi Kumar's surgery.
-        surgery("Ravi Kumar", "Appendectomy", drRam, ot1,
-                today.atTime(9, 0), today.atTime(11, 0), false,
-                "Routine", nurse, laparoscope);
+                Equipment laparoscope = equipment("Laparoscope", "Imaging", true);
+                Equipment cArm = equipment("C-arm", "Imaging", true);
+                Equipment defibrillator = equipment("Defibrillator", "Monitoring", true);
 
-        surgery("Sunita Devi", "Angioplasty", drRam, ot2,
-                today.atTime(10, 0), today.atTime(12, 0), false,
-                "Demo conflict: Dr. Ram double-booked", defibrillator);
+                // In maintenance — demonstrates the equipment availability check.
+                equipment("Heart-lung machine", "Perfusion", false);
 
-        surgery("Imran Khan", "Hip replacement", drPriya, ot3,
-                today.atTime(13, 30), today.atTime(16, 0), false,
-                null, cArm);
+                LocalDate today = LocalDate.now();
 
-        // Emergency-impact scenario for rescheduling validation.
-        surgery("Mohan Verma", "Gallbladder removal", drPriya, ot1,
-                today.plusDays(2).atTime(15, 0),
-                today.plusDays(2).atTime(17, 0),
-                false, "Displaced by emergency");
+                // Deliberate surgeon double-booking for the conflict demonstration.
+                // Meera Nurse is assigned to the first seeded surgery.
+                surgery("Ravi Kumar", "Appendectomy", drRam, ot1,
+                                today.atTime(9, 0), today.atTime(11, 0),
+                                false, "Routine", nurse, laparoscope);
 
-        surgery("Lakshmi Rao", "Emergency laparotomy", drPriya, ot1,
-                today.plusDays(2).atTime(15, 0),
-                today.plusDays(2).atTime(17, 0),
-                true, "Emergency case - prioritise");
+                surgery("Sunita Devi", "Angioplasty", drRam, ot2,
+                                today.atTime(10, 0), today.atTime(12, 0),
+                                false, "Demo conflict: Dr. Ram double-booked", defibrillator);
 
-        surgery("Vikram Singh", "Knee arthroscopy", drRam, ot3,
-                today.plusDays(1).atTime(9, 30),
-                today.plusDays(1).atTime(11, 0),
-                false, null, cArm);
+                surgery("Imran Khan", "Hip replacement", drPriya, ot3,
+                                today.atTime(13, 30), today.atTime(16, 0),
+                                false, null, cArm);
 
-        surgery("Anita Desai", "Pacemaker implant", drPriya, ot2,
-                today.plusDays(1).atTime(14, 0),
-                today.plusDays(1).atTime(16, 30),
-         }
+                // Emergency-impact scenario for testing assisted rescheduling.
+                surgery("Mohan Verma", "Gallbladder removal", drPriya, ot1,
+                                today.plusDays(2).atTime(15, 0),
+                                today.plusDays(2).atTime(17, 0),
+                                false, "Displaced by emergency");
 
-        
-    private UserAccount user(String email, String password, String name, Role role) {
-        return userRepository.save(
-                new UserAccount(email, passwordEncoder.encode(password), name, role));
-    }
+                surgery("Lakshmi Rao", "Emergency laparotomy", drPriya, ot1,
+                                today.plusDays(2).atTime(15, 0),
+                                today.plusDays(2).atTime(17, 0),
+                                true, "Emergency case - prioritise");
 
-    private Theatre theatre(String name, String speciality) {
-        return theatreRepository.save(new Theatre(name, speciality));
-    }
+                surgery("Vikram Singh", "Knee arthroscopy", drRam, ot3,
+                                today.plusDays(1).atTime(9, 30),
+                                today.plusDays(1).atTime(11, 0),
+                                false, null, cArm);
 
-    private Equipment equipment(String name, String type, boolean available) {
-        Equipment e = new Equipment(name, type);
-        e.setAvailable(available);
-        return equipmentRepository.save(e);
-    }
+                surgery("Anita Desai", "Pacemaker implant", drPriya, ot2,
+                                today.plusDays(1).atTime(14, 0),
+                                today.plusDays(1).atTime(16, 30),
+                                false, null, defibrillator);
+        }
 
-    // Helper for surgeries that use equipment.
-    private void surgery(String patient, String procedure, UserAccount surgeon,
-                         Theatre theatre, LocalDateTime start, LocalDateTime end,
-            
+        private UserAccount user(String email, String password, String name, Role role) {
+                return userRepository.save(
+                                new UserAccount(email, passwordEncoder.encode(password), name, role));
+        }
 
-            Surgery s = new Surgery();
-                s.setPatientName(patient);
-                s.setProcedureName(procedu
-                s.setLeadSurgeon(surgeon);
-         
+        private Theatre theatre(String name, String speciality) {
+                return theatreRepository.save(new Theatre(name, speciality));
+        }
 
-            s.setEndTime(end);
-                        ergency);
-                        ;
-                s.setStatus(SurgeryStatus.
-                s.getEquipment().addAll(Li
-                surgeryRepository.save(s);
-                
-                
-                elper for surgeries th
-                ate void surgery(S
-                                 Theatre t
-                                 b
-                                 Equipment... equipme
+        private Equipment equipment(String name, String type, boolean available) {
+                Equipment e = new Equipment(name, type);
+                e.setAvailable(available);
+                return equipmentRepository.save(e);
+        }
+
+        // Standard surgery helper, with optional equipment.
+        private void surgery(
+                        String patient,
+                        String procedure,
+                        UserAccount surgeon,
+                        Theatre theatre,
+                        LocalDateTime start,
+                        LocalDateTime end,
+                        boolean emergency,
+                        String notes,
+                        Equipment... equipment) {
+
+                surgery(patient, procedure, surgeon, theatre, start, end,
+                                emergency, notes, null, equipment);
+        }
+
+        // Surgery helper supporting both an assigned nurse and equipment.
+        private void surgery(
+                        String patient,
+                        String procedure,
+                        UserAccount surgeon,
+                        Theatre theatre,
+                        LocalDateTime start,
+                        LocalDateTime end,
+                        boolean emergency,
+                        String notes,
+                        UserAccount assignedNurse,
+                        Equipment... equipment) {
+
                 Surgery s = new Surgery();
                 s.setPatientName(patient);
-                
+                s.setProcedureName(procedure);
+                s.setLeadSurgeon(surgeon);
+                s.setTheatre(theatre);
+                s.setAssignedNurse(assignedNurse);
+                s.setStartTime(start);
+                s.setEndTime(end);
+                s.setEmergency(emergency);
+                s.setNotes(notes);
+                s.setStatus(SurgeryStatus.SCHEDULED);
+                s.getEquipment().addAll(List.of(equipment));
 
-        atre(theatre);
-        s.setAssignedNurse(assignedNurse);
-        s.setStartTime(start);
-        s.setEndTime(end);
-        s.setEmergency(emergency);
-        s.setNotes(notes);
-        s.setStatus(SurgeryStatus.SCHEDULED);
-        s.getEquipment().addAll(List.of(equipment));
-        surgeryRepository.save(s);
-    }
+                surgeryRepository.save(s);
+        }
+
+        private void surgery(
+                        String patient,
+                        String procedure,
+                        UserAccount surgeon,
+                        Theatre theatre,
+                        LocalDateTime start,
+                        boolean emergency) {
+
+                surgery(patient, procedure, surgeon, theatre,
+                                start, start.plusHours(2), emergency,
+                                emergency ? "Emergency case - prioritise" : null);
+        }
 }
- 
-
-        
-        
-        

@@ -184,7 +184,7 @@ class SchedulingServiceTest {
 
                 schedulingService.schedule(request);
 
-                verify(surgeryRepository, times(2)).findOverlapping(
+                verify(surgeryRepository, times(1)).findOverlapping(
                                 argThat(statuses -> statuses.containsAll(
                                                 List.of(SurgeryStatus.SCHEDULED, SurgeryStatus.IN_PROGRESS))),
                                 any(), any());
