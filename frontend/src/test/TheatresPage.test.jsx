@@ -102,4 +102,32 @@ describe('TheatresPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Access denied for your role');
   });
+  it('requests bookings for a newly selected date', async () => {
+    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+    api.listTheatres.mockResolvedValue(THEATRES);
+    api.listSurgeries.mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    renderPage();
+
+    const dateField = await screen.findByLabelText('Booking date');
+    await user.clear(dateField);
+    await user.type(dateField, '2030-01-15');
+
+    await waitFor(() => {
+      expect(api.listSurgeries).toHaveBeenCalledWith({ date: '2030-01-15' });
+    });
+  });
+
+  it('shows an error if bookings cannot be loaded', async () => {
+    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+    api.listTheatres.mockResolvedValue(THEATRES);
+    api.listSurgeries.mockRejectedValue(new Error('Booking API unavailable'));
+
+    renderPage();
+
+    expect(await screen.findByText(/Could not load bookings: Booking API unavailable/)).toBeInTheDocument();
+    expect(screen.queryByText('Available all day.')).not.toBeInTheDocument();
+  });
+
 });
