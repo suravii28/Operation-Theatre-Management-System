@@ -260,6 +260,42 @@ class SchedulingServiceTest {
     }
 
     @Test
+    void updatesExistingSurgeryAndExcludesItFromConflictCheck() {
+        Surgery existing = existingSurgery(70L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0), LocalDateTime.of(2030, 1, 10, 11, 0));
+        SurgeryRequest request = request(2L, 10L,
+                LocalDateTime.of(2030, 1, 10, 12, 0), LocalDateTime.of(2030, 1, 10, 13, 0));
+        when(surgeryRepository.findByIdForUpdate(70L)).thenReturn(Optional.of(existing));
+        when(theatreRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(ot2));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of(existing));
+        when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SurgeryResponse response = schedulingService.update(70L, request);
+
+        assertThat(response.theatreId()).isEqualTo(2L);
+        assertThat(response.startTime()).isEqualTo(request.startTime());
+        verify(surgeryRepository).save(existing);
+    }
+
+    @Test
+    void rejectsEditWhenAnotherSurgeryConflicts() {
+        Surgery existing = existingSurgery(70L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0), LocalDateTime.of(2030, 1, 10, 11, 0));
+        Surgery other = existingSurgery(71L, ot2, drRam,
+                LocalDateTime.of(2030, 1, 10, 12, 0), LocalDateTime.of(2030, 1, 10, 14, 0));
+        SurgeryRequest request = request(2L, 10L,
+                LocalDateTime.of(2030, 1, 10, 12, 30), LocalDateTime.of(2030, 1, 10, 13, 30));
+        when(surgeryRepository.findByIdForUpdate(70L)).thenReturn(Optional.of(existing));
+        when(theatreRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(ot2));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
+        when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of(existing, other));
+
+        assertThatThrownBy(() -> schedulingService.update(70L, request))
+                .isInstanceOf(SchedulingConflictException.class);
+    }
+
+    @Test
     void rescheduleRejectedWhenEndBeforeStart() {
         assertThatThrownBy(() -> schedulingService.reschedule(61L, new com.otms.dto.RescheduleRequest(
                 2L, LocalDateTime.of(2030, 1, 11, 11, 0), LocalDateTime.of(2030, 1, 11, 9, 0))))
@@ -443,6 +479,19 @@ class SchedulingServiceTest {
 
         assertThat(response.equipmentIds()).containsExactly(3L);
         assertThat(response.equipmentNames()).containsExactly("C-arm");
+    }
+
+    @Test
+    void rejectsEditingCompletedSurgery() {
+        Surgery completed = existingSurgery(70L, ot1, drRam,
+                LocalDateTime.of(2030, 1, 10, 9, 0), LocalDateTime.of(2030, 1, 10, 11, 0));
+        completed.setStatus(SurgeryStatus.COMPLETED);
+        when(surgeryRepository.findByIdForUpdate(70L)).thenReturn(Optional.of(completed));
+
+        assertThatThrownBy(() -> schedulingService.update(70L, request(1L, 10L,
+                LocalDateTime.of(2030, 1, 10, 12, 0), LocalDateTime.of(2030, 1, 10, 13, 0))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot be edited");
     }
 
     private SurgeryRequest request(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {

@@ -1,0 +1,15 @@
+ [32m✓[39m src/test/conflicts.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/test/ConflictBadge.test.jsx [2m([22m[2m1 test[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m src/test/LoginPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 499[2mms[22m[39m
+     [33m[2m✓[22m[39m stores the token and shows the user name after a successful login [33m 367[2mms[22m[39m
+ [32m✓[39m src/test/SurgeryForm.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 746[2mms[22m[39m
+     [33m[2m✓[22m[39m submits the scheduling payload with combined date and time [33m 544[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 16:37:51
+[2m   Duration [22m 2.92s[2m (transform 319ms, setup 822ms, import 577ms, tests 1.31s, environment 5.55s)[22m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+All files          |      80 |    64.15 |      70 |    81.9 |                   

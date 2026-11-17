@@ -12,6 +12,7 @@ export default function SurgeriesPage() {
   const [theatres, setTheatres] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingSurgery, setEditingSurgery] = useState(null);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -37,12 +38,14 @@ export default function SurgeriesPage() {
 
   const conflictingIds = useMemo(() => findConflictingIds(surgeries), [surgeries]);
 
-  async function handleCreate(payload) {
+  async function handleSave(payload) {
     setSubmitting(true);
     setFormError('');
     try {
-      await api.createSurgery(payload);
+      if (editingSurgery) await api.updateSurgery(editingSurgery.id, payload);
+      else await api.createSurgery(payload);
       setShowForm(false);
+      setEditingSurgery(null);
       load();
     } catch (err) {
       setFormError(err.status === 409 ? err.message : err.message || 'Failed to schedule surgery.');
@@ -93,8 +96,10 @@ export default function SurgeriesPage() {
         </button>
       </div>
 
-      {showForm ? (
-        <SurgeryForm theatres={theatres} doctors={doctors} onSubmit={handleCreate} submitting={submitting} />
+      {(showForm || editingSurgery) ? (
+        <SurgeryForm theatres={theatres} doctors={doctors} initialSurgery={editingSurgery}
+          onSubmit={handleSave} submitting={submitting}
+          onCancel={() => { setShowForm(false); setEditingSurgery(null); }} />
       ) : null}
       {formError ? <p className="banner-error" role="alert">{formError}</p> : null}
 
@@ -117,6 +122,7 @@ export default function SurgeriesPage() {
                   <th>Lead surgeon</th>
                   <th>Status</th>
                   <th>Flags</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,6 +140,13 @@ export default function SurgeriesPage() {
                     <td>
                       {surgery.emergency ? <span className="badge badge-emergency">Emergency</span> : null}{' '}
                       {conflictingIds.has(surgery.id) ? <ConflictBadge /> : null}
+                    </td>
+                    <td>
+                      {['SCHEDULED', 'IN_PROGRESS'].includes(surgery.status) ? (
+                        <button type="button" className="btn btn-small" onClick={() => {
+                          setShowForm(false); setEditingSurgery(surgery); setFormError('');
+                        }}>Edit</button>
+                      ) : <span className="muted">—</span>}
                     </td>
                   </tr>
                 ))}

@@ -13,8 +13,18 @@ const EMPTY = {
   notes: '',
 };
 
-export default function SurgeryForm({ theatres, doctors, onSubmit, submitting }) {
-  const [form, setForm] = useState(EMPTY);
+export default function SurgeryForm({ theatres, doctors, onSubmit, submitting, initialSurgery, onCancel }) {
+  const [form, setForm] = useState(() => initialSurgery ? {
+    patientName: initialSurgery.patientName ?? '',
+    procedureName: initialSurgery.procedureName ?? '',
+    leadSurgeonId: String(initialSurgery.leadSurgeonId ?? ''),
+    theatreId: String(initialSurgery.theatreId ?? ''),
+    date: initialSurgery.startTime?.slice(0, 10) ?? todayInputValue(),
+    startTime: initialSurgery.startTime?.slice(11, 16) ?? '09:00',
+    endTime: initialSurgery.endTime?.slice(11, 16) ?? '11:00',
+    emergency: Boolean(initialSurgery.emergency),
+    notes: initialSurgery.notes ?? '',
+  } : EMPTY);
   const [error, setError] = useState('');
 
   function update(field) {
@@ -45,7 +55,7 @@ export default function SurgeryForm({ theatres, doctors, onSubmit, submitting })
 
   return (
     <form className="card form-grid" onSubmit={handleSubmit}>
-      <h3>Schedule a surgery</h3>
+      <h3>{initialSurgery ? 'Edit surgery' : 'Schedule a surgery'}</h3>
 
       <label>
         Patient name
@@ -120,8 +130,9 @@ export default function SurgeryForm({ theatres, doctors, onSubmit, submitting })
 
       <div className="form-actions">
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Scheduling…' : 'Schedule surgery'}
+          {submitting ? 'Saving…' : initialSurgery ? 'Save changes' : 'Schedule surgery'}
         </button>
+        {onCancel ? <button type="button" className="btn" onClick={onCancel}>Cancel</button> : null}
       </div>
     </form>
   );

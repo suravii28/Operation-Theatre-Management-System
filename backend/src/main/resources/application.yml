@@ -11,8 +11,11 @@ spring:
     password: ""
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   h2:
     console:
       enabled: true
@@ -36,3 +39,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  h2:
+    console:
+      enabled: false
