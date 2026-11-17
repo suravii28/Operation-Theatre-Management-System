@@ -64,6 +64,7 @@ export const api = {
   listSurgeries: (params = {}) => request(`/api/surgeries${query(params)}`),
   listEmergencies: () => request('/api/surgeries/emergencies'),
   createSurgery: (surgery) => request('/api/surgeries', { method: 'POST', body: surgery }),
+  updateSurgery: (id, surgery) => request(`/api/surgeries/${id}`, { method: 'PUT', body: surgery }),
   updateStatus: (id, status) =>
     request(`/api/surgeries/${id}/status`, { method: 'PATCH', body: { status } }),
 };
