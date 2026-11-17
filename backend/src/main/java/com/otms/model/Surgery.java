@@ -3,6 +3,8 @@ package com.otms.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "surgeries")
@@ -42,6 +44,12 @@ public class Surgery {
 
     @Column(nullable = false)
     private boolean emergency = false;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "surgery_equipment",
+            joinColumns = @JoinColumn(name = "surgery_id"),
+            inverseJoinColumns = @JoinColumn(name = "equipment_id"))
+    private Set<Equipment> equipment = new LinkedHashSet<>();
 
     private String notes;
 
@@ -123,6 +131,14 @@ public class Surgery {
 
     public void setEmergency(boolean emergency) {
         this.emergency = emergency;
+    }
+
+    public Set<Equipment> getEquipment() {
+        return equipment;
+    }
+
+    public void setEquipment(Set<Equipment> equipment) {
+        this.equipment = equipment != null ? equipment : new LinkedHashSet<>();
     }
 
     public String getNotes() {

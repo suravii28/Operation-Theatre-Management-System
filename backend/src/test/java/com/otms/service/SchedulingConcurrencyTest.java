@@ -90,8 +90,8 @@ class SchedulingConcurrencyTest {
                                         start,
                                         end,
                                         false,
+                                        null,
                                         null));
-
                                 successes.incrementAndGet();
                             } catch (SchedulingConflictException ex) {
                                 conflicts.incrementAndGet();

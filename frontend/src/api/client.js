@@ -80,18 +80,37 @@ export const api = {
       body: { email, password },
     }),
 
-  listTheatres: () => request('/api/theatres'),
+  // Theatre APIs
+  listTheatres: (includeInactive = false) =>
+    request(`/api/theatres${includeInactive ? '?includeInactive=true' : ''}`),
 
+  setTheatreAvailability: (id, active) =>
+    request(`/api/theatres/${id}/availability`, {
+      method: 'PATCH',
+      body: { active },
+    }),
+
+  // Staff APIs
   listDoctors: () => request('/api/staff?role=DOCTOR'),
 
-  // Fetch active nurses for surgery assignment
+  // Fetch nurses for surgery assignment
   listNurses: () => request('/api/staff?role=NURSE'),
 
+  // Surgery APIs
   listSurgeries: (params = {}) =>
     request(`/api/surgeries${query(params)}`),
 
   listEmergencies: () =>
     request('/api/surgeries/emergencies'),
+
+  surgeryImpact: (id) =>
+    request(`/api/surgeries/${id}/impact`),
+
+  rescheduleSurgery: (id, payload) =>
+    request(`/api/surgeries/${id}/reschedule`, {
+      method: 'POST',
+      body: payload,
+    }),
 
   createSurgery: (surgery) =>
     request('/api/surgeries', {
@@ -109,5 +128,14 @@ export const api = {
     request(`/api/surgeries/${id}/status`, {
       method: 'PATCH',
       body: { status },
+    }),
+
+  // Notification APIs
+  listNotifications: () =>
+    request('/api/notifications'),
+
+  markNotificationRead: (id) =>
+    request(`/api/notifications/${id}/read`, {
+      method: 'PATCH',
     }),
 };

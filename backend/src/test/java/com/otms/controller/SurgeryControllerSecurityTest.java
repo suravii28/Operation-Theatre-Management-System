@@ -115,7 +115,7 @@ class SurgeryControllerSecurityTest {
                 null, null,
                 LocalDateTime.of(2030, 1, 10, 9, 0),
                 LocalDateTime.of(2030, 1, 10, 11, 0),
-                SurgeryStatus.SCHEDULED, false, null));
+                SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/surgeries")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -175,12 +175,62 @@ class SurgeryControllerSecurityTest {
                         null, null,
                         LocalDateTime.of(2030, 1, 10, 9, 0),
                         LocalDateTime.of(2030, 1, 10, 11, 0),
-                        SurgeryStatus.IN_PROGRESS, false, null));
+                        SurgeryStatus.IN_PROGRESS, false, null, List.of(), List.of()));
 
         mockMvc.perform(patch("/api/surgeries/1/status")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"IN_PROGRESS\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @WithMockUser(roles = "NURSE")
+    void anyAuthenticatedRoleCanViewEmergencyImpact() throws Exception {
+        when(schedulingService.impactAnalysis(5L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/surgeries/5/impact"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void doctorCannotRescheduleSurgery() throws Exception {
+        mockMvc.perform(post("/api/surgeries/5/reschedule")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "theatreId": 2,
+                          "startTime": "2030-01-11T09:00",
+                          "endTime": "2030-01-11T11:00"
+                        }
+                        """))
+                .andExpect(status().isForbidden());
+
+        verify(schedulingService, never()).reschedule(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "COORDINATOR")
+    void coordinatorCanRescheduleSurgery() throws Exception {
+        when(schedulingService.reschedule(any(), any())).thenReturn(new SurgeryResponse(
+                5L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 2L, "OT-2",
+                null, null,
+                LocalDateTime.of(2030, 1, 11, 9, 0),
+                LocalDateTime.of(2030, 1, 11, 11, 0),
+                SurgeryStatus.SCHEDULED, false, null, List.of(), List.of()));
+
+        mockMvc.perform(post("/api/surgeries/5/reschedule")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "theatreId": 2,
+                          "startTime": "2030-01-11T09:00",
+                          "endTime": "2030-01-11T11:00"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.theatreId").value(2));
     }
 }

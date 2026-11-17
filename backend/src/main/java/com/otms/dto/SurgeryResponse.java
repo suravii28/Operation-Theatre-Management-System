@@ -4,6 +4,7 @@ package com.otms.dto;
 import com.otms.model.SurgeryStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record SurgeryResponse(
                 Long id,
@@ -13,14 +14,13 @@ public record SurgeryResponse(
                 String leadSurgeonName,
                 Long theatreId,
                 String theatreName,
-
-                // Newly added: assigned nurse details
                 Long assignedNurseId,
                 String assignedNurseName,
-
                 LocalDateTime startTime,
                 LocalDateTime endTime,
                 SurgeryStatus status,
                 boolean emergency,
-                String notes) {
+                String notes,
+                List<Long> equipmentIds,
+                List<String> equipmentNames) {
 }
