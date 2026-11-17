@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SchedulingService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">otms-backend</a> &gt; <a href="index.source.html" class="el_package">com.otms.service</a> &gt; <span class="el_source">SchedulingService.java</span></div><h1>SchedulingService.java</h1><pre class="source lang-java linenums">package com.otms.service;
+
+import com.otms.dto.SurgeryRequest;
+import com.otms.dto.SurgeryResponse;
+import com.otms.model.Surgery;
+import com.otms.model.SurgeryStatus;
+import com.otms.model.Theatre;
+import com.otms.model.UserAccount;
+import com.otms.repository.SurgeryRepository;
+import com.otms.repository.TheatreRepository;
+import com.otms.repository.UserAccountRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.List;
+
+@Service
+public class SchedulingService {
+
+<span class="fc" id="L24">    private static final List&lt;SurgeryStatus&gt; ACTIVE_STATUSES =</span>
+<span class="fc" id="L25">            List.of(SurgeryStatus.SCHEDULED, SurgeryStatus.IN_PROGRESS);</span>
+
+    private final SurgeryRepository surgeryRepository;
+    private final TheatreRepository theatreRepository;
+    private final UserAccountRepository userAccountRepository;
+
+    public SchedulingService(SurgeryRepository surgeryRepository,
+                             TheatreRepository theatreRepository,
+<span class="fc" id="L33">                             UserAccountRepository userAccountRepository) {</span>
+<span class="fc" id="L34">        this.surgeryRepository = surgeryRepository;</span>
+<span class="fc" id="L35">        this.theatreRepository = theatreRepository;</span>
+<span class="fc" id="L36">        this.userAccountRepository = userAccountRepository;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Transactional
+    public SurgeryResponse schedule(SurgeryRequest request) {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (!request.isEndAfterStart()) {</span>
+<span class="fc" id="L42">            throw new IllegalArgumentException(&quot;End time must be after start time&quot;);</span>
+        }
+
+<span class="fc" id="L45">        Theatre theatre = theatreRepository.findById(request.theatreId())</span>
+<span class="fc" id="L46">                .filter(Theatre::isActive)</span>
+<span class="pc" id="L47">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Theatre not found: &quot; + request.theatreId()));</span>
+
+<span class="fc" id="L49">        UserAccount surgeon = userAccountRepository.findById(request.leadSurgeonId())</span>
+<span class="fc" id="L50">                .filter(UserAccount::isActive)</span>
+<span class="pc" id="L51">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Surgeon not found: &quot; + request.leadSurgeonId()));</span>
+
+<span class="fc" id="L53">        List&lt;Surgery&gt; conflicts = findConflicts(request.theatreId(), request.leadSurgeonId(),</span>
+<span class="fc" id="L54">                request.startTime(), request.endTime());</span>
+
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (!conflicts.isEmpty()) {</span>
+<span class="fc" id="L57">            throw new SchedulingConflictException(describeConflicts(conflicts));</span>
+        }
+
+<span class="fc" id="L60">        Surgery surgery = new Surgery();</span>
+<span class="fc" id="L61">        surgery.setPatientName(request.patientName());</span>
+<span class="fc" id="L62">        surgery.setProcedureName(request.procedureName());</span>
+<span class="fc" id="L63">        surgery.setLeadSurgeon(surgeon);</span>
+<span class="fc" id="L64">        surgery.setTheatre(theatre);</span>
+<span class="fc" id="L65">        surgery.setStartTime(request.startTime());</span>
+<span class="fc" id="L66">        surgery.setEndTime(request.endTime());</span>
+<span class="fc" id="L67">        surgery.setEmergency(request.emergency());</span>
+<span class="fc" id="L68">        surgery.setNotes(request.notes());</span>
+<span class="fc" id="L69">        surgery.setStatus(SurgeryStatus.SCHEDULED);</span>
+
+<span class="fc" id="L71">        return toResponse(surgeryRepository.save(surgery));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;Surgery&gt; findConflicts(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {
+<span class="fc" id="L76">        return surgeryRepository.findOverlapping(ACTIVE_STATUSES, start, end).stream()</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                .filter(s -&gt; s.getTheatre().getId().equals(theatreId)</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">                        || s.getLeadSurgeon().getId().equals(surgeonId))</span>
+<span class="fc" id="L79">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;SurgeryResponse&gt; list(LocalDate date, Long theatreId, SurgeryStatus status) {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        LocalDateTime from = date != null ? date.atStartOfDay() : LocalDateTime.of(1970, 1, 1, 0, 0);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        LocalDateTime to = date != null ? date.atTime(LocalTime.MAX) : LocalDateTime.of(2999, 12, 31, 23, 59);</span>
+
+<span class="nc" id="L87">        return surgeryRepository.findByStartTimeBetweenOrderByStartTime(from, to).stream()</span>
+<span class="nc bnc" id="L88" title="All 4 branches missed.">                .filter(s -&gt; theatreId == null || s.getTheatre().getId().equals(theatreId))</span>
+<span class="nc bnc" id="L89" title="All 4 branches missed.">                .filter(s -&gt; status == null || s.getStatus() == status)</span>
+<span class="nc" id="L90">                .sorted(Comparator.comparing(Surgery::getStartTime))</span>
+<span class="nc" id="L91">                .map(this::toResponse)</span>
+<span class="nc" id="L92">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public SurgeryResponse get(Long id) {
+<span class="nc" id="L97">        return surgeryRepository.findById(id)</span>
+<span class="nc" id="L98">                .map(this::toResponse)</span>
+<span class="nc" id="L99">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Surgery not found: &quot; + id));</span>
+    }
+
+    @Transactional
+    public SurgeryResponse updateStatus(Long id, SurgeryStatus status) {
+<span class="nc" id="L104">        Surgery surgery = surgeryRepository.findById(id)</span>
+<span class="nc" id="L105">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Surgery not found: &quot; + id));</span>
+<span class="nc" id="L106">        surgery.setStatus(status);</span>
+<span class="nc" id="L107">        return toResponse(surgeryRepository.save(surgery));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;SurgeryResponse&gt; listEmergencies() {
+<span class="nc" id="L112">        return surgeryRepository.findByEmergencyTrueAndStatusInOrderByStartTime(ACTIVE_STATUSES).stream()</span>
+<span class="nc" id="L113">                .map(this::toResponse)</span>
+<span class="nc" id="L114">                .toList();</span>
+    }
+
+    private String describeConflicts(List&lt;Surgery&gt; conflicts) {
+<span class="fc" id="L118">        StringBuilder message = new StringBuilder(&quot;Scheduling conflict detected:&quot;);</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (Surgery s : conflicts) {</span>
+<span class="fc" id="L120">            message.append(String.format(&quot; [%s occupied by '%s' for %s (%s - %s)]&quot;,</span>
+<span class="fc" id="L121">                    s.getTheatre().getName(),</span>
+<span class="fc" id="L122">                    s.getPatientName(),</span>
+<span class="fc" id="L123">                    s.getLeadSurgeon().getName(),</span>
+<span class="fc" id="L124">                    s.getStartTime(),</span>
+<span class="fc" id="L125">                    s.getEndTime()));</span>
+<span class="fc" id="L126">        }</span>
+<span class="fc" id="L127">        return message.toString();</span>
+    }
+
+    private SurgeryResponse toResponse(Surgery s) {
+<span class="fc" id="L131">        return new SurgeryResponse(</span>
+<span class="fc" id="L132">                s.getId(),</span>
+<span class="fc" id="L133">                s.getPatientName(),</span>
+<span class="fc" id="L134">                s.getProcedureName(),</span>
+<span class="fc" id="L135">                s.getLeadSurgeon().getId(),</span>
+<span class="fc" id="L136">                s.getLeadSurgeon().getName(),</span>
+<span class="fc" id="L137">                s.getTheatre().getId(),</span>
+<span class="fc" id="L138">                s.getTheatre().getName(),</span>
+<span class="fc" id="L139">                s.getStartTime(),</span>
+<span class="fc" id="L140">                s.getEndTime(),</span>
+<span class="fc" id="L141">                s.getStatus(),</span>
+<span class="fc" id="L142">                s.isEmergency(),</span>
+<span class="fc" id="L143">                s.getNotes()</span>
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
