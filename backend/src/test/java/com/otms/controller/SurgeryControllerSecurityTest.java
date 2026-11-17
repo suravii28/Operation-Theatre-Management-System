@@ -21,8 +21,11 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -98,5 +101,80 @@ class SurgeryControllerSecurityTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Scheduling conflict detected: [OT-1 occupied]"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanCreateSurgery() throws Exception {
+        when(schedulingService.schedule(any())).thenReturn(new com.otms.dto.SurgeryResponse(
+                5L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 1L, "OT-1",
+                java.time.LocalDateTime.of(2030, 1, 10, 9, 0),
+                java.time.LocalDateTime.of(2030, 1, 10, 11, 0),
+                com.otms.model.SurgeryStatus.SCHEDULED, false, null));
+
+        mockMvc.perform(post("/api/surgeries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "patientName": "Test Patient",
+                                  "procedureName": "Appendectomy",
+                                  "leadSurgeonId": 10,
+                                  "theatreId": 1,
+                                  "startTime": "2030-01-10T09:00",
+                                  "endTime": "2030-01-10T11:00"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.patientName").value("Test Patient"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void doctorCannotCreateSurgery() throws Exception {
+        mockMvc.perform(post("/api/surgeries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "patientName": "Test Patient",
+                                  "procedureName": "Appendectomy",
+                                  "leadSurgeonId": 10,
+                                  "theatreId": 1,
+                                  "startTime": "2030-01-10T09:00",
+                                  "endTime": "2030-01-10T11:00"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied for your role"));
+
+        verify(schedulingService, never()).schedule(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "NURSE")
+    void nurseCannotChangeSurgeryStatus() throws Exception {
+        mockMvc.perform(patch("/api/surgeries/1/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"IN_PROGRESS\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied for your role"));
+
+        verify(schedulingService, never()).updateStatus(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void doctorCanChangeSurgeryStatus() throws Exception {
+        when(schedulingService.updateStatus(1L, com.otms.model.SurgeryStatus.IN_PROGRESS))
+                .thenReturn(new com.otms.dto.SurgeryResponse(
+                        1L, "Test Patient", "Appendectomy", 10L, "Dr. Ram", 1L, "OT-1",
+                        java.time.LocalDateTime.of(2030, 1, 10, 9, 0),
+                        java.time.LocalDateTime.of(2030, 1, 10, 11, 0),
+                        com.otms.model.SurgeryStatus.IN_PROGRESS, false, null));
+
+        mockMvc.perform(patch("/api/surgeries/1/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"IN_PROGRESS\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
     }
 }

@@ -6,6 +6,7 @@ import com.otms.model.SurgeryStatus;
 import com.otms.service.SchedulingService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,12 +43,14 @@ public class SurgeryController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public SurgeryResponse create(@Valid @RequestBody SurgeryRequest request) {
         return schedulingService.schedule(request);
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'DOCTOR')")
     public SurgeryResponse updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         SurgeryStatus status = SurgeryStatus.valueOf(body.get("status"));
         return schedulingService.updateStatus(id, status);
