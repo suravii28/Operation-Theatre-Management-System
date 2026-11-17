@@ -55,8 +55,8 @@ class SchedulingServiceTest {
         SurgeryRequest request = request(1L, 10L,
                 LocalDateTime.of(2030, 1, 10, 9, 0),
                 LocalDateTime.of(2030, 1, 10, 11, 0));
-        when(theatreRepository.findById(1L)).thenReturn(Optional.of(ot1));
-        when(userAccountRepository.findById(10L)).thenReturn(Optional.of(drRam));
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(ot1));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
         when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
         when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> {
             Surgery s = invocation.getArgument(0);
@@ -75,8 +75,8 @@ class SchedulingServiceTest {
         SurgeryRequest request = request(1L, 10L,
                 LocalDateTime.of(2030, 1, 10, 10, 0),
                 LocalDateTime.of(2030, 1, 10, 12, 0));
-        when(theatreRepository.findById(1L)).thenReturn(Optional.of(ot1));
-        when(userAccountRepository.findById(10L)).thenReturn(Optional.of(drRam));
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(ot1));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
         when(surgeryRepository.findOverlapping(anyList(), any(), any()))
                 .thenReturn(List.of(existingSurgery(50L, ot1, drRam,
                         LocalDateTime.of(2030, 1, 10, 9, 0),
@@ -92,8 +92,8 @@ class SchedulingServiceTest {
         SurgeryRequest request = request(2L, 10L,
                 LocalDateTime.of(2030, 1, 10, 10, 0),
                 LocalDateTime.of(2030, 1, 10, 12, 0));
-        when(theatreRepository.findById(2L)).thenReturn(Optional.of(ot2));
-        when(userAccountRepository.findById(10L)).thenReturn(Optional.of(drRam));
+        when(theatreRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(ot2));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
         when(surgeryRepository.findOverlapping(anyList(), any(), any()))
                 .thenReturn(List.of(existingSurgery(51L, ot1, drRam,
                         LocalDateTime.of(2030, 1, 10, 9, 0),
@@ -108,8 +108,8 @@ class SchedulingServiceTest {
         SurgeryRequest request = request(1L, 10L,
                 LocalDateTime.of(2030, 1, 10, 12, 0),
                 LocalDateTime.of(2030, 1, 10, 13, 0));
-        when(theatreRepository.findById(1L)).thenReturn(Optional.of(ot1));
-        when(userAccountRepository.findById(10L)).thenReturn(Optional.of(drRam));
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(ot1));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
         when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
         when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> {
             Surgery s = invocation.getArgument(0);
@@ -138,8 +138,8 @@ class SchedulingServiceTest {
         SurgeryRequest request = request(1L, 10L,
                 LocalDateTime.of(2030, 1, 10, 9, 0),
                 LocalDateTime.of(2030, 1, 10, 11, 0));
-        when(theatreRepository.findById(1L)).thenReturn(Optional.of(ot1));
-        when(userAccountRepository.findById(10L)).thenReturn(Optional.of(drRam));
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(ot1));
+        when(userAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(drRam));
         when(surgeryRepository.findOverlapping(anyList(), any(), any())).thenReturn(List.of());
         when(surgeryRepository.save(any(Surgery.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

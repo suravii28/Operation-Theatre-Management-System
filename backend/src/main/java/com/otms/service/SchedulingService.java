@@ -42,11 +42,14 @@ public class SchedulingService {
             throw new IllegalArgumentException("End time must be after start time");
         }
 
-        Theatre theatre = theatreRepository.findById(request.theatreId())
+        // Pessimistic row locks (theatre first, then surgeon) serialise overlapping
+        // scheduling attempts so concurrent requests can never double-book a slot
+        // (OTMS-NF-006). The lock order is fixed to avoid deadlocks.
+        Theatre theatre = theatreRepository.findByIdForUpdate(request.theatreId())
                 .filter(Theatre::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Theatre not found: " + request.theatreId()));
 
-        UserAccount surgeon = userAccountRepository.findById(request.leadSurgeonId())
+        UserAccount surgeon = userAccountRepository.findByIdForUpdate(request.leadSurgeonId())
                 .filter(UserAccount::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Surgeon not found: " + request.leadSurgeonId()));
 
