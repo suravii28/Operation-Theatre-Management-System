@@ -49,6 +49,12 @@ public class SurgeryController {
         return schedulingService.schedule(request);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    public SurgeryResponse update(@PathVariable Long id, @Valid @RequestBody SurgeryRequest request) {
+        return schedulingService.update(id, request);
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'DOCTOR')")
     public SurgeryResponse updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
