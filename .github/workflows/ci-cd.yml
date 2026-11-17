@@ -1,10 +1,9 @@
-name: OTMS Documentation Validation Pipeline
+name: CI
 
 on:
   push:
     branches:
       - main
-      - "**"
   pull_request:
     branches:
       - main
@@ -13,9 +12,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate-pdfs:
-    name: Validate OTMS Project Documents
+  docs:
+    name: Docs validation
     runs-on: ubuntu-latest
 
     steps:
@@ -71,30 +74,189 @@ jobs:
           echo "OTMS project documentation in this repository:"
           ls -lh SAD_OTMS.pdf SRS_OTMS.pdf STP_OTMS.pdf
 
-      - name: Show event and changed files
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          ACTOR: ${{ github.actor }}
-          REF: ${{ github.ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BASE: ${{ github.event.pull_request.base.ref }}
-          PR_HEAD: ${{ github.event.pull_request.head.ref }}
-          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          echo "Event: $EVENT_NAME"
-          echo "Actor: $ACTOR"
-          echo "Ref: $REF"
-          echo "---"
+  backend:
+    name: Backend tests (Maven)
+    runs-on: ubuntu-latest
 
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            echo "Pull request #$PR_NUMBER: $PR_TITLE"
-            echo "Base branch: $PR_BASE"
-            echo "Head branch: $PR_HEAD"
-            echo "Changed files:"
-            git diff --name-only "origin/$PR_BASE...HEAD" || echo "(unable to compute diff)"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect Maven project
+        id: detect
+        run: |
+          if [ -f backend/pom.xml ]; then
+            echo "dir=backend" >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          elif [ -f pom.xml ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Commit: ${HEAD_MESSAGE:-manual or branch event}"
-            echo "Changed files in latest commit:"
-            git diff-tree --no-commit-id --name-only -r HEAD || echo "(unable to compute diff)"
+            echo "found=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up JDK 17
+        if: steps.detect.outputs.found == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: ${{ steps.detect.outputs.dir }}/pom.xml
+
+      - name: Run backend tests
+        if: steps.detect.outputs.found == 'true'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: |
+          if [ -x ./mvnw ]; then
+            ./mvnw -B test
+          else
+            mvn -B test
+          fi
+
+      - name: Publish JaCoCo coverage report
+        if: steps.detect.outputs.found == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-jacoco
+          path: ${{ steps.detect.outputs.dir }}/target/site/jacoco/
+          if-no-files-found: ignore
+
+      - name: Skip notice (no backend yet)
+        if: steps.detect.outputs.found != 'true'
+        run: echo "::notice::No Maven project found (backend/pom.xml or pom.xml). Backend tests skipped."
+
+  frontend:
+    name: Frontend tests (Node)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect Node project
+        id: detect
+        run: |
+          if [ -f frontend/package.json ]; then
+            echo "dir=frontend" >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          elif [ -f package.json ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js 20
+        if: steps.detect.outputs.found == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        if: steps.detect.outputs.found == 'true'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Run lint
+        if: steps.detect.outputs.found == 'true'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: npm run lint --if-present
+
+      - name: Run frontend tests
+        if: steps.detect.outputs.found == 'true'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        env:
+          CI: "true"
+        run: npm test --if-present
+
+      - name: Run frontend coverage
+        if: steps.detect.outputs.found == 'true'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        env:
+          CI: "true"
+        run: npm run test:coverage --if-present
+
+      - name: Publish frontend coverage report
+        if: steps.detect.outputs.found == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-v8
+          path: ${{ steps.detect.outputs.dir }}/coverage/
+          if-no-files-found: ignore
+
+      - name: Skip notice (no frontend yet)
+        if: steps.detect.outputs.found != 'true'
+        run: echo "::notice::No Node project found (frontend/package.json or package.json). Frontend tests skipped."
+
+  test-guard:
+    name: Test coverage guard
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require tests when application code changes
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+          changed=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+
+          echo "Changed files:"
+          printf '%s\n' "$changed"
+
+          backend_main=$(printf '%s\n' "$changed" | grep -E '^(backend/)?src/main/java/.*\.java$' || true)
+          backend_tests=$(printf '%s\n' "$changed" | grep -E '^(backend/)?src/test/java/.*\.java$' || true)
+          frontend_main=$(printf '%s\n' "$changed" | grep -E '^(frontend/)?src/.*\.(js|jsx|ts|tsx)$' | grep -vE '\.(test|spec)\.(js|jsx|ts|tsx)$' || true)
+          frontend_tests=$(printf '%s\n' "$changed" | grep -E '\.(test|spec)\.(js|jsx|ts|tsx)$' || true)
+
+          fail=0
+
+          if [ -n "$backend_main" ] && [ -z "$backend_tests" ]; then
+            echo "::error::Backend application code changed but no backend test was added or updated under src/test/java."
+            fail=1
+          fi
+
+          if [ -n "$frontend_main" ] && [ -z "$frontend_tests" ]; then
+            echo "::error::Frontend source changed but no frontend test was added or updated (*.test.* or *.spec.*)."
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "Every feature must include an appropriate test case (see CONTRIBUTING.md)."
+            exit 1
+          fi
+
+          echo "Test guard passed."
+
+  ci-success:
+    name: CI Success
+    if: always()
+    needs:
+      - docs
+      - backend
+      - frontend
+      - test-guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "One or more required jobs failed or were cancelled."
+          exit 1
+
+      - name: Confirm success
+        run: echo "All required CI jobs passed or were intentionally skipped."
