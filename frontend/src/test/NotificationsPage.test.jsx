@@ -76,4 +76,28 @@ describe('NotificationsPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Request failed (403)');
   });
+  it('filters to unread notifications', async () => {
+    api.listNotifications.mockResolvedValue(NOTIFICATIONS);
+    const user = userEvent.setup();
+
+    render(<NotificationsPage />);
+    await screen.findByText(/emergency surgery scheduled/i);
+    await user.selectOptions(screen.getByLabelText('Show notifications'), 'unread');
+
+    expect(screen.getByText(/emergency surgery scheduled/i)).toBeInTheDocument();
+    expect(screen.queryByText(/rescheduled to OT-3/i)).not.toBeInTheDocument();
+  });
+
+  it('filters to emergencies and explains empty results', async () => {
+    api.listNotifications.mockResolvedValue(NOTIFICATIONS.filter((n) => n.type !== 'EMERGENCY_SCHEDULED'));
+    const user = userEvent.setup();
+
+    render(<NotificationsPage />);
+    await screen.findByText(/rescheduled to OT-3/i);
+    await user.selectOptions(screen.getByLabelText('Show notifications'), 'emergencies');
+
+    expect(screen.getByText('No notifications match this filter.')).toBeInTheDocument();
+    expect(screen.queryByText(/rescheduled to OT-3/i)).not.toBeInTheDocument();
+  });
+
 });
