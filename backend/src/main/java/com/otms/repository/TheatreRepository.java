@@ -14,6 +14,8 @@ public interface TheatreRepository extends JpaRepository<Theatre, Long> {
 
     List<Theatre> findByActiveTrueOrderByName();
 
+    List<Theatre> findAllByOrderByName();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from Theatre t where t.id = :id")
     Optional<Theatre> findByIdForUpdate(@Param("id") Long id);

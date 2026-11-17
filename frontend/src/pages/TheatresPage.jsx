@@ -1,25 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthContext.jsx';
 import { api } from '../api/client.js';
 import { formatTime, todayInputValue } from '../util/format.js';
 
+const CAN_MANAGE_AVAILABILITY = ['ADMIN', 'TECHNICIAN'];
+
 export default function TheatresPage() {
+  const { user } = useAuth();
+  const canManage = CAN_MANAGE_AVAILABILITY.includes(user?.role);
   const [theatres, setTheatres] = useState([]);
   const [surgeries, setSurgeries] = useState([]);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    api
-      .listTheatres()
+  const load = useCallback(() => {
+    const request = canManage ? api.listTheatres(true) : api.listTheatres();
+    request
       .then(setTheatres)
       .catch((err) => setError(err.message));
     api
       .listSurgeries({ date: todayInputValue() })
       .then(setSurgeries)
       .catch(() => {});
-  }, []);
+  }, [canManage]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function bookingsFor(theatreId) {
     return surgeries.filter((s) => s.theatreId === theatreId);
+  }
+
+  async function toggleAvailability(theatre) {
+    setActionError('');
+    try {
+      await api.setTheatreAvailability(theatre.id, !theatre.active);
+      load();
+    } catch (err) {
+      setActionError(err.message);
+    }
   }
 
   return (
@@ -30,6 +50,7 @@ export default function TheatresPage() {
       </div>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {actionError ? <p className="banner-error" role="alert">{actionError}</p> : null}
 
       <div className="card-grid">
         {theatres.map((theatre) => {
@@ -57,6 +78,20 @@ export default function TheatresPage() {
                   ))}
                 </ul>
               )}
+              {canManage ? (
+                <div className="theatre-actions">
+                  <span className={theatre.active ? 'badge badge-scheduled' : 'badge badge-cancelled'}>
+                    {theatre.active ? 'Available' : 'Unavailable'}
+                  </span>
+                  <button
+                    type="button"
+                    className={`btn btn-small ${theatre.active ? 'btn-danger' : ''}`}
+                    onClick={() => toggleAvailability(theatre)}
+                  >
+                    {theatre.active ? 'Mark unavailable' : 'Mark available'}
+                  </button>
+                </div>
+              ) : null}
             </div>
           );
         })}

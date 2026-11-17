@@ -21,6 +21,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -152,6 +153,7 @@ class SchedulingServiceTest {
     }
 
 
+
     @Test
     void updatesExistingSurgeryAndExcludesItFromConflictCheck() {
         Surgery existing = existingSurgery(70L, ot1, drRam,
@@ -199,6 +201,22 @@ class SchedulingServiceTest {
                 LocalDateTime.of(2030, 1, 10, 12, 0), LocalDateTime.of(2030, 1, 10, 13, 0))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("cannot be edited");
+}
+    @Test
+    void rejectsSchedulingInInactiveTheatre() {
+        Theatre inactive = theatre(1L, "OT-1");
+        inactive.setActive(false);
+        SurgeryRequest request = request(1L, 10L,
+                LocalDateTime.of(2030, 1, 10, 9, 0),
+                LocalDateTime.of(2030, 1, 10, 11, 0));
+        when(theatreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(inactive));
+
+        assertThatThrownBy(() -> schedulingService.schedule(request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Theatre not found: 1");
+
+        verify(surgeryRepository, never()).save(any(Surgery.class));
+
     }
 
     private SurgeryRequest request(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {
