@@ -55,8 +55,11 @@ class SchedulingConcurrencyTest {
                         new UserAccount("conc.surgeon@otms.local", "unused",
                                 "Dr. Conc Test", Role.DOCTOR)));
 
-        UserAccount nurse = userAccountRepository.findByEmail("nurse@otms.local")
-                .orElseThrow(() -> new IllegalStateException("Seeded nurse not found"));
+        // Create a dedicated nurse for this test instead of relying on seeded data.
+        UserAccount nurse = userAccountRepository.findByEmail("conc.nurse@otms.local")
+                .orElseGet(() -> userAccountRepository.save(
+                        new UserAccount("conc.nurse@otms.local", "unused",
+                                "Nurse Concurrency Test", Role.NURSE)));
 
         for (int round = 0; round < 5; round++) {
             LocalDateTime start = day.atTime(8, 0).plusHours(round * 2);
