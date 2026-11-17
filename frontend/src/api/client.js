@@ -85,7 +85,7 @@ export const api = {
     request(`/api/theatres${includeInactive ? '?includeInactive=true' : ''}`),
 
   setTheatreAvailability: (id, active) =>
-    request(`/api/theatres/${id}/availability`, {
+    request(`/api/theatres/${id}/status`, {
       method: 'PATCH',
       body: { active },
     }),

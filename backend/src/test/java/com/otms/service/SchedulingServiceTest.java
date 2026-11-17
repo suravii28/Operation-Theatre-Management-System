@@ -1,3 +1,4 @@
+
 package com.otms.service;
 
 import com.otms.dto.SurgeryRequest;
@@ -190,6 +191,7 @@ class SchedulingServiceTest {
                                 any(), any());
         }
 
+        // Updated for Issue #18: inactive theatres now cause a scheduling conflict.
         @Test
         void rejectsSchedulingInInactiveTheatre() {
                 Theatre inactive = theatre(1L, "OT-1");
@@ -203,8 +205,9 @@ class SchedulingServiceTest {
                                 .thenReturn(Optional.of(inactive));
 
                 assertThatThrownBy(() -> schedulingService.schedule(request))
-                                .isInstanceOf(ResourceNotFoundException.class)
-                                .hasMessageContaining("Theatre not found: 1");
+                                .isInstanceOf(SchedulingConflictException.class)
+                                .hasMessageContaining("OT-1")
+                                .hasMessageContaining("currently unavailable");
 
                 verify(surgeryRepository, never()).save(any(Surgery.class));
         }
