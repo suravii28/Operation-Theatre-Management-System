@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext.jsx';
@@ -107,12 +107,10 @@ describe('TheatresPage', () => {
     api.listTheatres.mockResolvedValue(THEATRES);
     api.listSurgeries.mockResolvedValue([]);
 
-    const user = userEvent.setup();
     renderPage();
 
     const dateField = await screen.findByLabelText('Booking date');
-    await user.clear(dateField);
-    await user.type(dateField, '2030-01-15');
+    fireEvent.change(dateField, { target: { value: '2030-01-15' } });
 
     await waitFor(() => {
       expect(api.listSurgeries).toHaveBeenCalledWith({ date: '2030-01-15' });
