@@ -1,3 +1,4 @@
+
 package com.otms.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -12,11 +13,14 @@ public record SurgeryRequest(
         @NotBlank String procedureName,
         @NotNull Long leadSurgeonId,
         @NotNull Long theatreId,
+
+        // Newly added: ID of the assigned nurse
+        Long nurseId,
+
         @NotNull @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime startTime,
         @NotNull @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime endTime,
         boolean emergency,
-        String notes
-) {
+        String notes) {
 
     @AssertTrue(message = "End time must be after start time")
     public boolean isEndAfterStart() {

@@ -1,7 +1,9 @@
+
 package com.otms.service;
 
 import com.otms.dto.SurgeryRequest;
 import com.otms.dto.SurgeryResponse;
+import com.otms.model.Role;
 import com.otms.model.Surgery;
 import com.otms.model.SurgeryStatus;
 import com.otms.model.Theatre;
@@ -21,16 +23,16 @@ import java.util.List;
 @Service
 public class SchedulingService {
 
-    private static final List<SurgeryStatus> ACTIVE_STATUSES =
-            List.of(SurgeryStatus.SCHEDULED, SurgeryStatus.IN_PROGRESS);
+    private static final List<SurgeryStatus> ACTIVE_STATUSES = List.of(SurgeryStatus.SCHEDULED,
+            SurgeryStatus.IN_PROGRESS);
 
     private final SurgeryRepository surgeryRepository;
     private final TheatreRepository theatreRepository;
     private final UserAccountRepository userAccountRepository;
 
     public SchedulingService(SurgeryRepository surgeryRepository,
-                             TheatreRepository theatreRepository,
-                             UserAccountRepository userAccountRepository) {
+            TheatreRepository theatreRepository,
+            UserAccountRepository userAccountRepository) {
         this.surgeryRepository = surgeryRepository;
         this.theatreRepository = theatreRepository;
         this.userAccountRepository = userAccountRepository;
@@ -42,19 +44,27 @@ public class SchedulingService {
             throw new IllegalArgumentException("End time must be after start time");
         }
 
-        // Pessimistic row locks (theatre first, then surgeon) serialise overlapping
-        // scheduling attempts so concurrent requests can never double-book a slot
-        // (OTMS-NF-006). The lock order is fixed to avoid deadlocks.
+        // Lock theatre first, then surgeon, then nurse.
+        // This keeps a consistent lock order for scheduling operations.
         Theatre theatre = theatreRepository.findByIdForUpdate(request.theatreId())
                 .filter(Theatre::isActive)
-                .orElseThrow(() -> new ResourceNotFoundException("Theatre not found: " + request.theatreId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Theatre not found: " + request.theatreId()));
 
         UserAccount surgeon = userAccountRepository.findByIdForUpdate(request.leadSurgeonId())
                 .filter(UserAccount::isActive)
-                .orElseThrow(() -> new ResourceNotFoundException("Surgeon not found: " + request.leadSurgeonId()));
+                .filter(user -> user.getRole() == Role.DOCTOR)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Surgeon not found: " + request.leadSurgeonId()));
 
-        List<Surgery> conflicts = findConflicts(request.theatreId(), request.leadSurgeonId(),
-                request.startTime(), request.endTime());
+        UserAccount nurse = getAssignedNurse(request.nurseId());
+
+        List<Surgery> conflicts = findConflicts(
+                request.theatreId(),
+                request.leadSurgeonId(),
+                request.nurseId(),
+                request.startTime(),
+                request.endTime());
 
         if (!conflicts.isEmpty()) {
             throw new SchedulingConflictException(describeConflicts(conflicts));
@@ -65,6 +75,7 @@ public class SchedulingService {
         surgery.setProcedureName(request.procedureName());
         surgery.setLeadSurgeon(surgeon);
         surgery.setTheatre(theatre);
+        surgery.setAssignedNurse(nurse);
         surgery.setStartTime(request.startTime());
         surgery.setEndTime(request.endTime());
         surgery.setEmergency(request.emergency());
@@ -82,22 +93,36 @@ public class SchedulingService {
 
         Surgery surgery = surgeryRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Surgery not found: " + id));
-        if (surgery.getStatus() == SurgeryStatus.COMPLETED || surgery.getStatus() == SurgeryStatus.CANCELLED) {
-            throw new IllegalArgumentException("Completed or cancelled surgeries cannot be edited");
+
+        if (surgery.getStatus() == SurgeryStatus.COMPLETED
+                || surgery.getStatus() == SurgeryStatus.CANCELLED) {
+            throw new IllegalArgumentException(
+                    "Completed or cancelled surgeries cannot be edited");
         }
 
-        // Keep the same lock order as scheduling: theatre first, then surgeon.
+        // Keep the same lock order: theatre, surgeon, nurse.
         Theatre theatre = theatreRepository.findByIdForUpdate(request.theatreId())
                 .filter(Theatre::isActive)
-                .orElseThrow(() -> new ResourceNotFoundException("Theatre not found: " + request.theatreId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Theatre not found: " + request.theatreId()));
+
         UserAccount surgeon = userAccountRepository.findByIdForUpdate(request.leadSurgeonId())
                 .filter(UserAccount::isActive)
-                .orElseThrow(() -> new ResourceNotFoundException("Surgeon not found: " + request.leadSurgeonId()));
+                .filter(user -> user.getRole() == Role.DOCTOR)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Surgeon not found: " + request.leadSurgeonId()));
 
-        List<Surgery> conflicts = findConflicts(request.theatreId(), request.leadSurgeonId(),
-                request.startTime(), request.endTime()).stream()
+        UserAccount nurse = getAssignedNurse(request.nurseId());
+
+        List<Surgery> conflicts = findConflicts(
+                request.theatreId(),
+                request.leadSurgeonId(),
+                request.nurseId(),
+                request.startTime(),
+                request.endTime()).stream()
                 .filter(other -> !other.getId().equals(id))
                 .toList();
+
         if (!conflicts.isEmpty()) {
             throw new SchedulingConflictException(describeConflicts(conflicts));
         }
@@ -106,28 +131,72 @@ public class SchedulingService {
         surgery.setProcedureName(request.procedureName());
         surgery.setLeadSurgeon(surgeon);
         surgery.setTheatre(theatre);
+        surgery.setAssignedNurse(nurse);
         surgery.setStartTime(request.startTime());
         surgery.setEndTime(request.endTime());
         surgery.setEmergency(request.emergency());
         surgery.setNotes(request.notes());
+
         return toResponse(surgeryRepository.save(surgery));
     }
 
+    // Retrieves and validates the selected nurse.
+    private UserAccount getAssignedNurse(Long nurseId) {
+        if (nurseId == null) {
+            throw new IllegalArgumentException("An assigned nurse is required");
+        }
+
+        return userAccountRepository.findByIdForUpdate(nurseId)
+                .filter(UserAccount::isActive)
+                .filter(user -> user.getRole() == Role.NURSE)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Active nurse not found: " + nurseId));
+    }
+
+    // Checks theatre, surgeon and nurse conflicts.
     @Transactional(readOnly = true)
-    public List<Surgery> findConflicts(Long theatreId, Long surgeonId, LocalDateTime start, LocalDateTime end) {
-        return surgeryRepository.findOverlapping(ACTIVE_STATUSES, start, end).stream()
+    public List<Surgery> findConflicts(
+            Long theatreId,
+            Long surgeonId,
+            Long nurseId,
+            LocalDateTime start,
+            LocalDateTime end) {
+
+        return surgeryRepository.findOverlapping(ACTIVE_STATUSES, start, end)
+                .stream()
                 .filter(s -> s.getTheatre().getId().equals(theatreId)
-                        || s.getLeadSurgeon().getId().equals(surgeonId))
+                        || s.getLeadSurgeon().getId().equals(surgeonId)
+                        || (s.getAssignedNurse() != null
+                                && s.getAssignedNurse().getId().equals(nurseId)))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<SurgeryResponse> list(LocalDate date, Long theatreId, SurgeryStatus status) {
-        LocalDateTime from = date != null ? date.atStartOfDay() : LocalDateTime.of(1970, 1, 1, 0, 0);
-        LocalDateTime to = date != null ? date.atTime(LocalTime.MAX) : LocalDateTime.of(2999, 12, 31, 23, 59);
+    public List<Surgery> findConflicts(
+            Long theatreId,
+            Long surgeonId,
+            LocalDateTime start,
+            LocalDateTime end) {
 
-        return surgeryRepository.findByStartTimeBetweenOrderByStartTime(from, to).stream()
-                .filter(s -> theatreId == null || s.getTheatre().getId().equals(theatreId))
+        return findConflicts(theatreId, surgeonId, null, start, end);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SurgeryResponse> list(
+            LocalDate date, Long theatreId, SurgeryStatus status) {
+
+        LocalDateTime from = date != null
+                ? date.atStartOfDay()
+                : LocalDateTime.of(1970, 1, 1, 0, 0);
+
+        LocalDateTime to = date != null
+                ? date.atTime(LocalTime.MAX)
+                : LocalDateTime.of(2999, 12, 31, 23, 59);
+
+        return surgeryRepository.findByStartTimeBetweenOrderByStartTime(from, to)
+                .stream()
+                .filter(s -> theatreId == null
+                        || s.getTheatre().getId().equals(theatreId))
                 .filter(s -> status == null || s.getStatus() == status)
                 .sorted(Comparator.comparing(Surgery::getStartTime))
                 .map(this::toResponse)
@@ -138,34 +207,45 @@ public class SchedulingService {
     public SurgeryResponse get(Long id) {
         return surgeryRepository.findById(id)
                 .map(this::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Surgery not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Surgery not found: " + id));
     }
 
     @Transactional
     public SurgeryResponse updateStatus(Long id, SurgeryStatus status) {
         Surgery surgery = surgeryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Surgery not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Surgery not found: " + id));
+
         surgery.setStatus(status);
         return toResponse(surgeryRepository.save(surgery));
     }
 
     @Transactional(readOnly = true)
     public List<SurgeryResponse> listEmergencies() {
-        return surgeryRepository.findByEmergencyTrueAndStatusInOrderByStartTime(ACTIVE_STATUSES).stream()
+        return surgeryRepository
+                .findByEmergencyTrueAndStatusInOrderByStartTime(ACTIVE_STATUSES)
+                .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     private String describeConflicts(List<Surgery> conflicts) {
         StringBuilder message = new StringBuilder("Scheduling conflict detected:");
+
         for (Surgery s : conflicts) {
-            message.append(String.format(" [%s occupied by '%s' for %s (%s - %s)]",
+            message.append(String.format(
+                    " [Theatre: %s, Surgeon: %s, Nurse: %s, Patient: '%s', Time: %s - %s]",
                     s.getTheatre().getName(),
-                    s.getPatientName(),
                     s.getLeadSurgeon().getName(),
+                    s.getAssignedNurse() != null
+                            ? s.getAssignedNurse().getName()
+                            : "Not assigned",
+                    s.getPatientName(),
                     s.getStartTime(),
                     s.getEndTime()));
         }
+
         return message.toString();
     }
 
@@ -178,11 +258,16 @@ public class SchedulingService {
                 s.getLeadSurgeon().getName(),
                 s.getTheatre().getId(),
                 s.getTheatre().getName(),
+                s.getAssignedNurse() != null
+                        ? s.getAssignedNurse().getId()
+                        : null,
+                s.getAssignedNurse() != null
+                        ? s.getAssignedNurse().getName()
+                        : null,
                 s.getStartTime(),
                 s.getEndTime(),
                 s.getStatus(),
                 s.isEmergency(),
-                s.getNotes()
-        );
+                s.getNotes());
     }
 }
