@@ -26,6 +26,11 @@ public class UserAccount {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private java.time.LocalDateTime lockedUntil;
     public UserAccount() {
     }
 
@@ -79,4 +84,25 @@ public class UserAccount {
     public void setActive(boolean active) {
         this.active = active;
     }
+
+    public int getFailedLoginAttempts() {
+    return failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(int failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+}
+
+public java.time.LocalDateTime getLockedUntil() {
+    return lockedUntil;
+}
+
+public void setLockedUntil(java.time.LocalDateTime lockedUntil) {
+    this.lockedUntil = lockedUntil;
+}
+
+public boolean isLocked() {
+    return lockedUntil != null &&
+            lockedUntil.isAfter(java.time.LocalDateTime.now());
+}
 }

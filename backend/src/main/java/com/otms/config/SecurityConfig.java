@@ -38,17 +38,19 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(UserAccountRepository users) {
-        return email -> users.findByEmail(email)
-                .filter(u -> u.isActive())
-                .map(u -> org.springframework.security.core.userdetails.User
-                        .withUsername(u.getEmail())
-                        .password(u.getPassword())
-                        .roles(u.getRole().name())
-                        .build())
-                .orElseThrow(() -> new UsernameNotFoundException("Unknown user: " + email));
-    }
+   @Bean
+public UserDetailsService userDetailsService(UserAccountRepository users) {
+    return email -> users.findByEmail(email)
+            .map(u -> org.springframework.security.core.userdetails.User
+                    .withUsername(u.getEmail())
+                    .password(u.getPassword())
+                    .roles(u.getRole().name())
+                    .accountLocked(u.isLocked())
+                    .disabled(!u.isActive())
+                    .build())
+            .orElseThrow(() ->
+                    new UsernameNotFoundException("Unknown user: " + email));
+}
 
     @Bean
     public PasswordEncoder passwordEncoder() {

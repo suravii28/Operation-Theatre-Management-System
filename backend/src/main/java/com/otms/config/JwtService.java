@@ -1,3 +1,4 @@
+
 package com.otms.config;
 
 import io.jsonwebtoken.Claims;
@@ -18,6 +19,7 @@ public class JwtService {
 
     private final SecretKey key;
     private final Duration ttl;
+    private final Duration refreshTtl = Duration.ofDays(7);
 
     public JwtService(@Value("${jwt.secret}") String secret,
                       @Value("${jwt.expiration-minutes}") long expirationMinutes) {
@@ -26,13 +28,23 @@ public class JwtService {
     }
 
     public String generateToken(String email, String name, String role) {
+        return generate(email, name, role, ttl, "access");
+    }
+
+    public String generateRefreshToken(String email, String name, String role) {
+        return generate(email, name, role, refreshTtl, "refresh");
+    }
+
+    private String generate(String email, String name, String role,
+                            Duration duration, String type) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(email)
                 .claim("name", name)
                 .claim("role", role)
+                .claim("type", type)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(ttl)))
+                .expiration(Date.from(now.plus(duration)))
                 .signWith(key)
                 .compact();
     }
@@ -47,6 +59,12 @@ public class JwtService {
         } catch (Exception ex) {
             return Optional.empty();
         }
+    }
+
+    public Optional<Claims> parseRefreshToken(String token) {
+        return parse(token).filter(
+                claims -> "refresh".equals(claims.get("type", String.class))
+        );
     }
 
     private byte[] padSecret(String secret) {
