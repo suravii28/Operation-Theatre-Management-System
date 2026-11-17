@@ -1,5 +1,6 @@
 package com.otms.controller;
 
+import com.otms.dto.RescheduleRequest;
 import com.otms.dto.SurgeryRequest;
 import com.otms.dto.SurgeryResponse;
 import com.otms.model.SurgeryStatus;
@@ -35,6 +36,17 @@ public class SurgeryController {
     @GetMapping("/emergencies")
     public List<SurgeryResponse> emergencies() {
         return schedulingService.listEmergencies();
+    }
+
+    @GetMapping("/{id}/impact")
+    public List<SurgeryResponse> impact(@PathVariable Long id) {
+        return schedulingService.impactAnalysis(id);
+    }
+
+    @PostMapping("/{id}/reschedule")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    public SurgeryResponse reschedule(@PathVariable Long id, @Valid @RequestBody RescheduleRequest request) {
+        return schedulingService.reschedule(id, request);
     }
 
     @GetMapping("/{id}")
