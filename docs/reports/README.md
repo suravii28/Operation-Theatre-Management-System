@@ -7,7 +7,7 @@
 | Part-3 deliverable | Current report | Measured evidence |
 |---|---|---|
 | (i) Unit Test Report | [unit-test-report.md](20261118-ci/unit-test-report.md) | Backend 65/65 pass; frontend 31/31 pass |
-| (ii) System Validation Report | [system-validation-report.md](20261118-ci/system-validation-report.md) | CI controller/integration passes; live Newman suite and performance evidence tracked with separate workflow |
+| (ii) System Validation Report | [system-validation-report.md](20261118-ci/system-validation-report.md) | Live Newman 33/33 requests and 36/36 assertions passed; 180-request performance p90 32.7ms in [run #44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844) |
 | (iii) Code Coverage Report | [code-coverage-report.md](20261118-ci/code-coverage-report.md) | JaCoCo backend **84.93% lines**; V8 frontend **79.64% lines** |
 | (iv) Branch Coverage Report | [branch-coverage-report.md](20261118-ci/branch-coverage-report.md) | JaCoCo backend **71.54% branches**; V8 frontend **76.34% branches** |
 
@@ -41,7 +41,7 @@ node scripts/perf-check.js --requests 180 --concurrency 6 \
   --out docs/reports/20261118-ci/performance-results.json
 ```
 
-GitHub workflow `.github/workflows/api-system-validation.yml` runs the full live API/Postman suite, captures Newman output, runs the performance probe and uploads JSON/log artifacts. It requires GitHub Actions to finish successfully before claiming its results as verified.
+GitHub workflow `.github/workflows/api-system-validation.yml` runs the full live API/Postman suite, captures Newman output, runs the performance probe and uploads JSON/log artifacts. Its validated passing run is [#44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844); see [system-validation-results-summary.json](20261118-ci/system-validation-results-summary.json) and [performance-results.json](20261118-ci/performance-results.json).
 
 ## Interpreting acceptance
 
