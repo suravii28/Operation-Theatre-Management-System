@@ -1,3 +1,4 @@
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -5,12 +6,19 @@ import SurgeryForm from '../components/SurgeryForm.jsx';
 
 const THEATRES = [{ id: 1, name: 'OT-1', speciality: 'General Surgery' }];
 const DOCTORS = [{ id: 10, name: 'Dr. Ram Sharma' }];
+const NURSES = [{ id: 20, name: 'Nurse A' }];
 
 function renderForm(onSubmit = vi.fn()) {
   return {
     onSubmit,
     ...render(
-      <SurgeryForm theatres={THEATRES} doctors={DOCTORS} onSubmit={onSubmit} submitting={false} />,
+      <SurgeryForm
+        theatres={THEATRES}
+        doctors={DOCTORS}
+        nurses={NURSES}
+        onSubmit={onSubmit}
+        submitting={false}
+      />,
     ),
   };
 }
@@ -24,12 +32,17 @@ describe('SurgeryForm', () => {
     await user.type(screen.getByLabelText(/procedure/i), 'Appendectomy');
     await user.selectOptions(screen.getByLabelText(/lead surgeon/i), '10');
     await user.selectOptions(screen.getByLabelText(/theatre/i), '1');
+    await user.selectOptions(screen.getByLabelText(/assigned nurse/i), '20');
+
     await user.clear(screen.getByLabelText(/date/i));
     await user.type(screen.getByLabelText(/date/i), '2030-01-10');
+
     await user.clear(screen.getByLabelText(/start time/i));
     await user.type(screen.getByLabelText(/start time/i), '09:00');
+
     await user.clear(screen.getByLabelText(/end time/i));
     await user.type(screen.getByLabelText(/end time/i), '11:00');
+
     await user.click(screen.getByRole('button', { name: /schedule surgery/i }));
 
     await waitFor(() => {
@@ -39,6 +52,7 @@ describe('SurgeryForm', () => {
           procedureName: 'Appendectomy',
           leadSurgeonId: 10,
           theatreId: 1,
+          nurseId: 20,
           startTime: '2030-01-10T09:00',
           endTime: '2030-01-10T11:00',
           emergency: false,
@@ -55,50 +69,79 @@ describe('SurgeryForm', () => {
     await user.type(screen.getByLabelText(/procedure/i), 'Appendectomy');
     await user.selectOptions(screen.getByLabelText(/lead surgeon/i), '10');
     await user.selectOptions(screen.getByLabelText(/theatre/i), '1');
+    await user.selectOptions(screen.getByLabelText(/assigned nurse/i), '20');
+
     await user.clear(screen.getByLabelText(/start time/i));
     await user.type(screen.getByLabelText(/start time/i), '11:00');
+
     await user.clear(screen.getByLabelText(/end time/i));
     await user.type(screen.getByLabelText(/end time/i), '09:00');
+
     await user.click(screen.getByRole('button', { name: /schedule surgery/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('End time must be after start time');
+    expect(await screen.findByRole('alert'))
+      .toHaveTextContent('End time must be after start time');
+
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('prefills an existing surgery and submits the edited values', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
+
     const initialSurgery = {
       patientName: 'Ravi Kumar',
       procedureName: 'Appendectomy',
       leadSurgeonId: 10,
       theatreId: 1,
+      assignedNurseId: 20,
       startTime: '2030-01-10T09:00',
       endTime: '2030-01-10T11:00',
       emergency: false,
       notes: 'Pre-op review',
     };
+
     render(
-      <SurgeryForm theatres={THEATRES} doctors={DOCTORS} onSubmit={onSubmit}
-        submitting={false} initialSurgery={initialSurgery} />,
+      <SurgeryForm
+        theatres={THEATRES}
+        doctors={DOCTORS}
+        nurses={NURSES}
+        onSubmit={onSubmit}
+        submitting={false}
+        initialSurgery={initialSurgery}
+      />,
     );
 
-    expect(screen.getByRole('heading', { name: /edit surgery/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/patient name/i)).toHaveValue('Ravi Kumar');
-    expect(screen.getByLabelText(/date/i)).toHaveValue('2030-01-10');
+    expect(screen.getByRole('heading', { name: /edit surgery/i }))
+      .toBeInTheDocument();
+
+    expect(screen.getByLabelText(/patient name/i))
+      .toHaveValue('Ravi Kumar');
+
+    expect(screen.getByLabelText(/date/i))
+      .toHaveValue('2030-01-10');
+
+    expect(screen.getByLabelText(/assigned nurse/i))
+      .toHaveValue('20');
+
     await user.clear(screen.getByLabelText(/procedure/i));
     await user.type(screen.getByLabelText(/procedure/i), 'Revised procedure');
+
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-      patientName: 'Ravi Kumar',
-      procedureName: 'Revised procedure',
-      leadSurgeonId: 10,
-      theatreId: 1,
-      startTime: '2030-01-10T09:00',
-      endTime: '2030-01-10T11:00',
-      notes: 'Pre-op review',
-    })));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientName: 'Ravi Kumar',
+          procedureName: 'Revised procedure',
+          leadSurgeonId: 10,
+          theatreId: 1,
+          nurseId: 20,
+          startTime: '2030-01-10T09:00',
+          endTime: '2030-01-10T11:00',
+          notes: 'Pre-op review',
+        }),
+      );
+    });
   });
-
 });

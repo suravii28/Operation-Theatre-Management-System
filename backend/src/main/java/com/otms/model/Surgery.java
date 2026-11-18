@@ -1,3 +1,4 @@
+
 package com.otms.model;
 
 import jakarta.persistence.*;
@@ -24,6 +25,12 @@ public class Surgery {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Theatre theatre;
+
+    // Newly added: assigned nurse for the surgery
+    // Optional initially to maintain compatibility with existing surgeries
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_nurse_id", nullable = true)
+    private UserAccount assignedNurse;
 
     @Column(nullable = false)
     private LocalDateTime startTime;
@@ -83,6 +90,15 @@ public class Surgery {
 
     public void setTheatre(Theatre theatre) {
         this.theatre = theatre;
+    }
+
+    // Newly added getter and setter
+    public UserAccount getAssignedNurse() {
+        return assignedNurse;
+    }
+
+    public void setAssignedNurse(UserAccount assignedNurse) {
+        this.assignedNurse = assignedNurse;
     }
 
     public LocalDateTime getStartTime() {
