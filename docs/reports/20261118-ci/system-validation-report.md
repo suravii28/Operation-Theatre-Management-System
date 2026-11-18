@@ -14,7 +14,7 @@ System validation checks whether the integrated API and UI meet major SRS accept
 | REST controller and scheduling service integration | 65 backend tests in CI | **PASS in CI** |
 | React component and workflow behavior | 31 Vitest tests in CI | **PASS in CI** |
 | PostgreSQL integration under `prod` profile | Dedicated CI PostgreSQL service job | **PASS in CI** |
-| Full HTTP API/Postman collection against running backend | `docs/reports/system-validation.postman_collection.json` updated to 32 ordered requests | **NOT EXECUTED in this update** |
+| Full HTTP API/Postman collection against running backend | `docs/reports/system-validation.postman_collection.json` updated to 33 ordered requests | **NOT EXECUTED in this update** |
 | Browser end-to-end (Playwright/Cypress) | No completed E2E CI suite in current `main` | **NOT VERIFIED** |
 | Role-based manual walkthrough | No new signed execution record | **NOT VERIFIED** |
 | Sustained availability and deployed-system validation | No deployed monitoring dataset | **NOT VERIFIED** |
@@ -23,12 +23,12 @@ System validation checks whether the integrated API and UI meet major SRS accept
 
 ## Updated test collection (Sprint-3 changes)
 
-The 32-request Postman collection now:
+The 33-request Postman collection now:
 
 1. Discovers active nurse IDs using `GET /api/staff?role=NURSE` and includes `nurseId` for surgery creation.
 2. Uses `PATCH /api/theatres/{id}/status` rather than retired `/availability`.
 3. Uses an ADMIN bearer token for theatre changes; adds an explicit **403** check for a TECHNICIAN role.
-4. Retains tests for surgery creation, role guards, equipment maintenance, emergency impact and rescheduling, notifications, and reporting data.
+4. Includes explicit TC-RES-02 nurse double-booking rejection across distinct surgeon and theatre; retains surgery creation, role guards, equipment maintenance, emergency impact and rescheduling, notifications, and reporting data.
 
 ### Exact execution procedure to generate an HTTP results artifact
 
