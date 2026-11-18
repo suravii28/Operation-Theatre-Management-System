@@ -1,0 +1,15 @@
+{
+  "source": "GitHub Actions Newman workflow run 44213680844",
+  "source_commit": "775d6c2c3318ee2d6ddadf04241290b84c2efb59",
+  "executed_at_utc": "2026-11-18T01:10:35Z",
+  "collection": "docs/reports/system-validation.postman_collection.json",
+  "environment": "Spring Boot local H2 + Flyway V1-V3; seeded demo data; GitHub Actions Ubuntu",
+  "iterations": 1,
+  "requests": 33,
+  "request_failures": 0,
+  "test_scripts": 33,
+  "assertions": 36,
+  "assertion_failures": 0,
+  "overall_result": "PASS",
+  "full_unredacted_artifact": "https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844"
+}
