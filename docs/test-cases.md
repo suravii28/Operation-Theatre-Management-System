@@ -6,7 +6,7 @@
 | **Version** | 3.0 (current-code reconciliation) |
 | **Date** | 2026-11-18 |
 | **Authors** | OTMS Team — see STP §9 for roles (QA Lead: Sudhiksha; OT Coordinator: Praneetha; Product Owner: Shesanth; Development Lead: Suravi) |
-| **Status** | CI suites executed; updated HTTP system suite pending live execution |
+| **Status** | CI Maven/Vitest/PostgreSQL, 33-request Newman suite and performance probe passed; manual/E2E pending |
 | **Baseline** | SRS v1.0, SAD v1.0, STP v1.0 (all in the repository root) |
 
 This document is the single source of truth for OTMS test cases: every case
@@ -22,9 +22,9 @@ records its current status. Execution results and evidence live in
 | 1.0 | 2026-10-31 | Sprint-2 baseline: 14 backend + 10 frontend automated tests and a 9-request Postman collection. Catalog maintained informally in `STP_OTMS.docx` §13. |
 | 2.0 | 2026-11-11 | Sprint-3: this document. New/automated cases for role guards (TC-Auth-03/04, TC-SEC-02), theatre availability toggle (TC-RES-04), emergency impact & reschedule (TC-EMG-02/03/04), notifications (TC-NOT-01/02), concurrency (TC-Conc-01) and performance (TC-Perf-01). Postman collection extended 9 → 23 requests; `scripts/perf-check.js` added; suite now 45 backend + 26 frontend automated tests. |
 
-| 3.0 | 2026-11-18 | Reconciled test cases with merged nurse availability and theatre status RBAC, corrected V3 Flyway and Java environment, and linked real CI execution evidence (65 backend and 31 frontend passing). Updated Postman collection to 33 checks; fresh Newman execution pending. |
+| 3.0 | 2026-11-18 | Reconciled test cases with merged nurse availability and theatre status RBAC, corrected V3 Flyway and Java environment, and linked real CI execution evidence (65 backend and 31 frontend passing). Updated Postman collection to 33 checks; the updated Newman run passed in CI on 18 Nov. |
 
-**Current evidence note (v3.0):** Previous v2.0 case-level PASS labels and the historical summary below describe an earlier execution baseline; they are **not automatically proof for current code**. For the current version, 65 backend and 31 frontend automated tests passed in [CI run #44211242242](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44211242242). Fresh end-to-end Newman and manual acceptance results have **not** been recorded. See [current system validation report](reports/20261118-ci/system-validation-report.md). The explicit scope for new nurse checks is *assignment and overlapping-surgery conflicts*, not complete staff shifts/leave rosters.
+**Current evidence note (v3.0):** Previous v2.0 case-level PASS labels and the historical summary below describe an earlier execution baseline; they are **not automatically proof for current code**. For the current version, 65 backend and 31 frontend automated tests passed in [CI run #44211242242](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44211242242). The 33-request Newman run executed **36 assertions with zero failures** in [CI run #44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844); manual browser E2E and usability acceptance remain pending. See [current system validation report](reports/20261118-ci/system-validation-report.md). The explicit scope for new nurse checks is *assignment and overlapping-surgery conflicts*, not complete staff shifts/leave rosters.
 
 ## How to execute the suite
 
@@ -160,7 +160,7 @@ Notes:
 
 ### TC-RES-02 — Nurse availability
 - **Requirement:** OTMS-F-011 · Priority: Medium
-- **Status:** **Implemented and tested for overlapping bookings** — `nurseId` is required by the scheduling service for new records; invalid/unavailable nurses or overlapping assigned-nurse bookings are rejected. Full shift/leave roster availability remains out of scope. Issue #14 is closed and PR #55 is merged. Latest backend CI passed; updated Newman request not yet executed.
+- **Status:** **Implemented and tested for overlapping bookings** — `nurseId` is required by the scheduling service for new records; invalid/unavailable nurses or overlapping assigned-nurse bookings are rejected. Full shift/leave roster availability remains out of scope. Issue #14 is closed and PR #55 is merged. Latest backend CI passed; updated Newman case passed in CI.
 
 ### TC-RES-03 — Equipment availability
 - **Requirement:** OTMS-F-012 · Priority: Medium
@@ -171,12 +171,12 @@ Notes:
 - **Preconditions:** ADMIN or COORDINATOR logged in; an active theatre exists.
 - **Steps:** `PATCH /api/theatres/{id}/status` with `{"active":false}`; attempt to schedule into the disabled theatre; toggle back to `{"active":true}`. Negative variants: missing `active` field (`400`), unknown theatre (`404`), TECHNICIAN attempting the toggle (`403`).
 - **Expected:** Toggle returns the theatre with the new state; scheduling into an inactive theatre is rejected with `409`; after re-enabling, scheduling can succeed; the UI shows the toggle only to coordinators/admins.
-- **Automated by:** `TheatreControllerTest` (6 tests); `SchedulingServiceTest.rejectsSchedulingInInactiveTheatre`; `TheatresPage.test.jsx` (4 tests); Updated Postman `TC-RES-04` chain (technician 403 → coordinator disables → scheduling 409 → re-enable); current Newman execution pending.
+- **Automated by:** `TheatreControllerTest` (6 tests); `SchedulingServiceTest.rejectsSchedulingInInactiveTheatre`; `TheatresPage.test.jsx` (4 tests); Updated Postman `TC-RES-04` chain (technician 403 → coordinator disables → scheduling 409 → re-enable); the current Newman case passed in CI.
 - **Status:** Automated — PASS.
 
 ### TC-RES-05 — Equipment maintenance status
 - **Requirement:** OTMS-F-022 · Priority: Medium
-- **Status:** **Implemented in current code** — ADMIN/TECHNICIAN can PATCH equipment status; the ordered Postman scenarios test maintenance, restoration, successful booking and revert. Fresh Newman execution pending.
+- **Status:** **Implemented in current code** — ADMIN/TECHNICIAN can PATCH equipment status; the ordered Postman scenarios test maintenance, restoration, successful booking and revert. Newman execution passed in CI on 18 November.
 
 ## 5. Conflict Detection
 
@@ -370,8 +370,9 @@ issues #13–#15 and the production checklist.
 | Backend scheduling, nurse, equipment, access checks and migrations | 65/65 Maven tests passed, CI run #44211242242 | **PASS (CI)** |
 | Frontend UI component / logic tests | 31/31 Vitest tests passed, same CI | **PASS (CI)** |
 | PostgreSQL profile integration | GitHub Actions PostgreSQL + Flyway job successful; Flyway V1–V3 applied | **PASS (CI)** |
-| Full 33-request Postman live HTTP suite | `docs/reports/system-validation.postman_collection.json` updated; Newman workflow added | **NOT YET VERIFIED at this checkpoint** |
+| Full 33-request Postman live HTTP suite | `docs/reports/system-validation.postman_collection.json` updated; Newman workflow added | **PASS — 33 requests, 36 assertions, 0 failures in CI run #44213680844** |
 | Security hardening / audit event trail | No merged dedicated audit repository or token-refresh/rate limiting | **BLOCKED BY OPEN ISSUES #12/#13** |
+| Normal-load performance (OTMS-NF-001) | 180 HTTP requests, concurrency 6, p90 32.7ms, 0 failures, run #44213680844 | **PASS (CI, local test load)** |
 | Production availability + manual usability sign-off | No current signed live-environment execution sheet | **PENDING** |
 
 The results above refer to the new measured baseline and **do not rewrite dates or pass claims for the original November 2–6 test window**. See `docs/reports/20261118-ci/` for separately titled unit, system, code coverage, and branch coverage reports.
