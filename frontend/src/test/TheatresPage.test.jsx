@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext.jsx';
@@ -27,7 +29,12 @@ vi.mock('../api/client.js', () => ({
 import { api } from '../api/client.js';
 
 function fakeToken(role) {
-  const body = btoa(JSON.stringify({ sub: 'tech@otms.local', name: 'Arun Technician', role })).replace(/=/g, '');
+  const body = btoa(JSON.stringify({
+    sub: 'coordinator@otms.local',
+    name: 'OTMS User',
+    role,
+  })).replace(/=/g, '');
+
   return `header.${body}.signature`;
 }
 
@@ -51,8 +58,8 @@ describe('TheatresPage', () => {
     api.listSurgeries.mockResolvedValue([]);
   });
 
-  it('shows the availability toggle to technicians and lists inactive theatres', async () => {
-    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+  it('shows the availability toggle to coordinators and lists inactive theatres', async () => {
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
     api.listTheatres.mockResolvedValue(THEATRES);
 
     renderPage();
@@ -63,9 +70,12 @@ describe('TheatresPage', () => {
   });
 
   it('calls the availability endpoint when toggling', async () => {
-    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
     api.listTheatres.mockResolvedValue(THEATRES);
-    api.setTheatreAvailability.mockResolvedValue({ ...THEATRES[0], active: false });
+    api.setTheatreAvailability.mockResolvedValue({
+      ...THEATRES[0],
+      active: false,
+    });
 
     const user = userEvent.setup();
     renderPage();
@@ -85,22 +95,26 @@ describe('TheatresPage', () => {
 
     expect(await screen.findByText('OT-1')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /mark/i })).not.toBeInTheDocument();
+
     await waitFor(() => {
       expect(api.listTheatres).toHaveBeenCalledWith();
     });
   });
 
   it('shows an error when toggling fails', async () => {
-    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
     api.listTheatres.mockResolvedValue(THEATRES);
-    api.setTheatreAvailability.mockRejectedValue(new Error('Access denied for your role'));
+    api.setTheatreAvailability.mockRejectedValue(
+      new Error('Access denied for your role'),
+    );
 
     const user = userEvent.setup();
     renderPage();
 
     await user.click(await screen.findByRole('button', { name: 'Mark unavailable' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Access denied for your role');
+    expect(await screen.findByRole('alert'))
+      .toHaveTextContent('Access denied for your role');
   });
   it('requests bookings for a newly selected date', async () => {
     localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));

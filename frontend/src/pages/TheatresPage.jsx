@@ -1,9 +1,10 @@
+
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { api } from '../api/client.js';
 import { formatTime, todayInputValue } from '../util/format.js';
 
-const CAN_MANAGE_AVAILABILITY = ['ADMIN', 'TECHNICIAN'];
+const CAN_MANAGE_AVAILABILITY = ['ADMIN', 'COORDINATOR'];
 
 export default function TheatresPage() {
   const { user } = useAuth();
@@ -21,6 +22,11 @@ export default function TheatresPage() {
     request
       .then(setTheatres)
       .catch((err) => setError(err.message));
+
+    api
+      .listSurgeries({ date: todayInputValue() })
+      .then(setSurgeries)
+      .catch(() => {});
   }, [canManage]);
 
   useEffect(() => {
@@ -48,6 +54,7 @@ export default function TheatresPage() {
 
   async function toggleAvailability(theatre) {
     setActionError('');
+
     try {
       await api.setTheatreAvailability(theatre.id, !theatre.active);
       load();
@@ -76,16 +83,20 @@ export default function TheatresPage() {
       <div className="card-grid">
         {theatres.map((theatre) => {
           const bookings = bookingsFor(theatre.id);
+
           return (
             <div key={theatre.id} className="card theatre-card">
               <div className="theatre-card-header">
                 <h3>{theatre.name}</h3>
                 <span className="role-chip">{theatre.speciality}</span>
               </div>
+
               <p>
                 {bookingsLoading ? 'Loading bookings…' : `${bookings.length} booking${bookings.length === 1 ? '' : 's'} on selected date`}
               </p>
               {bookingsLoading || bookingsError ? null : bookings.length === 0 ? (
+
+              {bookings.length === 0 ? (
                 <p className="muted">Available all day.</p>
               ) : (
                 <ul className="booking-list">
@@ -99,11 +110,13 @@ export default function TheatresPage() {
                   ))}
                 </ul>
               )}
+
               {canManage ? (
                 <div className="theatre-actions">
                   <span className={theatre.active ? 'badge badge-scheduled' : 'badge badge-cancelled'}>
                     {theatre.active ? 'Available' : 'Unavailable'}
                   </span>
+
                   <button
                     type="button"
                     className={`btn btn-small ${theatre.active ? 'btn-danger' : ''}`}

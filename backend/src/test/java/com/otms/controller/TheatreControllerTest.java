@@ -1,3 +1,4 @@
+
 package com.otms.controller;
 
 import com.otms.config.JwtAuthenticationFilter;
@@ -18,6 +19,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -29,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TheatreController.class)
-@Import({SecurityConfig.class, TheatreControllerTest.TestConfig.class})
+@Import({ SecurityConfig.class, TheatreControllerTest.TestConfig.class })
 class TheatreControllerTest {
 
     @Autowired
@@ -66,7 +68,7 @@ class TheatreControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "TECHNICIAN")
+    @WithMockUser(roles = "COORDINATOR")
     void includesInactiveTheatresWhenRequested() throws Exception {
         when(theatreRepository.findAllByOrderByName()).thenReturn(List.of(
                 theatre(1L, "OT-1", "General Surgery", true),
@@ -79,19 +81,41 @@ class TheatreControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "TECHNICIAN")
-    void technicianCanToggleTheatreAvailability() throws Exception {
+    @WithMockUser(roles = "COORDINATOR")
+    void coordinatorCanToggleTheatreAvailability() throws Exception {
         Theatre ot2 = theatre(2L, "OT-2", "Cardiac", true);
-        when(theatreRepository.findById(2L)).thenReturn(java.util.Optional.of(ot2));
+
+        when(theatreRepository.findById(2L)).thenReturn(Optional.of(ot2));
         when(theatreRepository.save(any())).thenAnswer(invocation -> {
             Theatre t = invocation.getArgument(0);
             t.setActive(false);
             return t;
         });
 
-        mockMvc.perform(patch("/api/theatres/2/availability")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"active\": false}"))
+        mockMvc.perform(patch("/api/theatres/2/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\": false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+
+        verify(theatreRepository).save(any(Theatre.class));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanToggleTheatreAvailability() throws Exception {
+        Theatre ot2 = theatre(2L, "OT-2", "Cardiac", true);
+
+        when(theatreRepository.findById(2L)).thenReturn(Optional.of(ot2));
+        when(theatreRepository.save(any())).thenAnswer(invocation -> {
+            Theatre t = invocation.getArgument(0);
+            t.setActive(false);
+            return t;
+        });
+
+        mockMvc.perform(patch("/api/theatres/2/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\": false}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
 
@@ -101,9 +125,9 @@ class TheatreControllerTest {
     @Test
     @WithMockUser(roles = "NURSE")
     void nurseCannotToggleTheatreAvailability() throws Exception {
-        mockMvc.perform(patch("/api/theatres/2/availability")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"active\": false}"))
+        mockMvc.perform(patch("/api/theatres/2/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\": false}"))
                 .andExpect(status().isForbidden());
 
         verify(theatreRepository, never()).save(any());
@@ -111,23 +135,32 @@ class TheatreControllerTest {
 
     @Test
     @WithMockUser(roles = "TECHNICIAN")
-    void unknownTheatreReturns404() throws Exception {
-        when(theatreRepository.findById(99L)).thenReturn(java.util.Optional.empty());
+    void technicianCannotToggleTheatreAvailability() throws Exception {
+        mockMvc.perform(patch("/api/theatres/2/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\": false}"))
+                .andExpect(status().isForbidden());
 
-        mockMvc.perform(patch("/api/theatres/99/availability")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"active\": false}"))
+        verify(theatreRepository, never()).save(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "COORDINATOR")
+    void unknownTheatreReturns404() throws Exception {
+        when(theatreRepository.findById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(patch("/api/theatres/99/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\": false}"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser(roles = "TECHNICIAN")
+    @WithMockUser(roles = "COORDINATOR")
     void missingActiveFieldRejected() throws Exception {
-        when(theatreRepository.findById(2L)).thenReturn(java.util.Optional.of(theatre(2L, "OT-2", "Cardiac", true)));
-
-        mockMvc.perform(patch("/api/theatres/2/availability")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+        mockMvc.perform(patch("/api/theatres/2/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
                 .andExpect(status().isBadRequest());
     }
 

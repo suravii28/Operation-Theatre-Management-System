@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toApiDateTime, todayInputValue } from '../util/format.js';
 
@@ -6,6 +7,7 @@ const EMPTY = {
   procedureName: '',
   leadSurgeonId: '',
   theatreId: '',
+  nurseId: '',
   date: todayInputValue(),
   startTime: '09:00',
   endTime: '11:00',
@@ -13,39 +15,60 @@ const EMPTY = {
   notes: '',
 };
 
-export default function SurgeryForm({ theatres, doctors, onSubmit, submitting, initialSurgery, onCancel }) {
+export default function SurgeryForm({
+  theatres,
+  doctors,
+  nurses,
+  onSubmit,
+  submitting,
+  initialSurgery,
+  onCancel,
+}) {
   const [form, setForm] = useState(() => initialSurgery ? {
     patientName: initialSurgery.patientName ?? '',
     procedureName: initialSurgery.procedureName ?? '',
     leadSurgeonId: String(initialSurgery.leadSurgeonId ?? ''),
     theatreId: String(initialSurgery.theatreId ?? ''),
+    nurseId: String(initialSurgery.assignedNurseId ?? ''),
     date: initialSurgery.startTime?.slice(0, 10) ?? todayInputValue(),
     startTime: initialSurgery.startTime?.slice(11, 16) ?? '09:00',
     endTime: initialSurgery.endTime?.slice(11, 16) ?? '11:00',
     emergency: Boolean(initialSurgery.emergency),
     notes: initialSurgery.notes ?? '',
   } : EMPTY);
+
   const [error, setError] = useState('');
 
   function update(field) {
     return (event) => {
-      const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+      const value = event.target.type === 'checkbox'
+        ? event.target.checked
+        : event.target.value;
       setForm((current) => ({ ...current, [field]: value }));
     };
   }
 
   function handleSubmit(event) {
     event.preventDefault();
+
     if (form.endTime <= form.startTime) {
       setError('End time must be after start time.');
       return;
     }
+
+    if (!form.nurseId) {
+      setError('Please select an assigned nurse.');
+      return;
+    }
+
     setError('');
+
     onSubmit({
       patientName: form.patientName.trim(),
       procedureName: form.procedureName.trim(),
       leadSurgeonId: Number(form.leadSurgeonId),
       theatreId: Number(form.theatreId),
+      nurseId: Number(form.nurseId),
       startTime: toApiDateTime(form.date, form.startTime),
       endTime: toApiDateTime(form.date, form.endTime),
       emergency: form.emergency,
@@ -102,6 +125,18 @@ export default function SurgeryForm({ theatres, doctors, onSubmit, submitting, i
       </label>
 
       <label>
+        Assigned nurse
+        <select required value={form.nurseId} onChange={update('nurseId')}>
+          <option value="">Select nurse</option>
+          {(nurses ?? []).map((nurse) => (
+            <option key={nurse.id} value={nurse.id}>
+              {nurse.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
         Date
         <input required type="date" value={form.date} onChange={update('date')} />
       </label>
@@ -132,7 +167,11 @@ export default function SurgeryForm({ theatres, doctors, onSubmit, submitting, i
         <button type="submit" className="btn btn-primary" disabled={submitting}>
           {submitting ? 'Saving…' : initialSurgery ? 'Save changes' : 'Schedule surgery'}
         </button>
-        {onCancel ? <button type="button" className="btn" onClick={onCancel}>Cancel</button> : null}
+        {onCancel ? (
+          <button type="button" className="btn" onClick={onCancel}>
+            Cancel
+          </button>
+        ) : null}
       </div>
     </form>
   );

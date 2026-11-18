@@ -1,3 +1,4 @@
+
 package com.otms;
 
 import org.flywaydb.core.Flyway;
@@ -17,6 +18,6 @@ class FlywayMigrationTest {
     void appliesAndValidatesCurrentSchema() {
         flyway.validate();
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
     }
 }
