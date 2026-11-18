@@ -48,19 +48,26 @@ jobs:
           exit 1
       - name: Install Newman
         run: npm install --no-save --no-audit --no-fund --prefix /tmp/otms-newman newman@6
-      - name: Execute 32-request SRS-mapped collection
+      - name: Execute 33-request SRS-mapped collection
         run: |
           mkdir -p docs/reports/system-validation-latest
           /tmp/otms-newman/node_modules/.bin/newman run \
             docs/reports/system-validation.postman_collection.json \
             --reporters cli,json \
             --reporter-json-export docs/reports/system-validation-latest/newman-results.json
-      - name: Upload Newman results and backend logs
+      - name: Execute reproducible normal-load performance probe
+        if: always()
+        run: |
+          mkdir -p docs/reports/system-validation-latest
+          node scripts/perf-check.js --requests 180 --concurrency 6 \\
+            --out docs/reports/system-validation-latest/performance-results.json
+      - name: Upload Newman, performance and backend logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: otms-system-validation-newman
           path: |
             docs/reports/system-validation-latest/newman-results.json
+            docs/reports/system-validation-latest/performance-results.json
             backend-system-validation.log
           if-no-files-found: warn
