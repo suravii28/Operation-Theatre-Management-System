@@ -43,7 +43,7 @@ During viva, each member should open their **own specific PR(s)** to explain wha
 
 **How were points estimated?** Relative Fibonacci-style estimates (2/3/5/8), not elapsed hours or counts of commits. Overlapping legacy issues were excluded from double-counted velocity. See `docs/story-points-2026-11.md`.
 
-**What is your test strategy?** Backend Maven/Spring tests, React/Vitest component tests, PostgreSQL/Flyway integration, real HTTP Newman checks, a normal-load performance probe and a browser smoke workflow. Manual usability and deployment-level NFR testing need separate acceptance.
+**What is your test strategy?** Backend Maven/Spring tests, React/Vitest component tests, PostgreSQL/Flyway integration, real HTTP Newman checks, a normal-load performance probe and a **passing** 4-check Chromium browser smoke workflow. Manual usability and deployment-level NFR testing need separate acceptance.
 
 ## Measured test results and where to demonstrate
 
@@ -51,6 +51,7 @@ During viva, each member should open their **own specific PR(s)** to explain wha
 - JaCoCo backend: **84.93% line**, **71.54% branch**.
 - Vitest/V8 frontend: **79.64% line**, **76.34% branch**.
 - [Newman/performance run #44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844): **33 HTTP requests**, **36 assertions**, **zero failures**. Normal-load probe: **180 requests**, **p90 32.7 ms**, **zero failures**.
+- [Browser E2E smoke run #44215079683](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44215079683): 4 checks passed (login, navigation, emergency impact, CSV download).
 - The preceding measurements belong to **18 November 2026**, *not* the assignment's 2–6 November testing window.
 
 ## Final-demo checklist
