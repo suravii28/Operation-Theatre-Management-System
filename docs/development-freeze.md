@@ -22,7 +22,7 @@
 | Normal load response-time budget | Same run: 180 requests, 0 failed, p90 32.7 ms vs 3000 ms | **PASS** |
 | Browser smoke | [Chromium run #44215079683](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44215079683): 4 journeys | **PASS** |
 | PR #58 reviewed before merge | PR #58 approved by another reviewer, merged into main | **PASS** |
-| Current frozen SHA's own CI | Check newest main Actions run and fill exact result here before declaring final release | **PENDING final review** |
+| Main candidate SHA's own CI | [CI #44216432433](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44216432433), [Newman #44216432429](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44216432429), and [browser E2E #44216432481](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44216432481), all for `288a8b14` | **PASS (all 3)** |
 
 ## Outstanding acceptance gates
 
@@ -30,7 +30,7 @@
 - [ ] Complete 15 manual UAT cases in `docs/manual-uat-signoff.md`, attach dated screenshots, collect QA/product owner approval.
 - [ ] Review open SRS/NFR issues and record conscious deferrals; issue status must not be falsified for submission.
 - [ ] Decide on PR #53: explicitly defer or merge with review and rerun all tests, which requires updating the frozen SHA.
-- [ ] Record the exact final main SHA and results from a CI run against that SHA.
+- [x] Record the candidate main SHA `288a8b14` and its three passing CI runs; if main changes, repeat verification for the new SHA.
 - [ ] Owner and QA lead approve the final baseline.
 - [ ] Upload the two videos: Sprint 1 terminal-only (1 minute), Sprint 2 React UI/results (2 minutes).
 
