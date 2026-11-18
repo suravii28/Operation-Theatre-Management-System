@@ -1,0 +1,66 @@
+name: API system validation (Newman)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postman-system-validation:
+    name: Postman/Newman full HTTP API suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Start Spring Boot backend with fresh H2/Flyway seed
+        run: |
+          cd backend
+          ./mvnw -B -q spring-boot:run > "$GITHUB_WORKSPACE/backend-system-validation.log" 2>&1 &
+          echo $! > "$GITHUB_WORKSPACE/backend-system-validation.pid"
+      - name: Wait until HTTP login works
+        run: |
+          for n in $(seq 1 90); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              -X POST http://127.0.0.1:8080/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"admin@otms.local","password":"Admin123!"}' || true)
+            if [ "$status" = "200" ]; then
+              echo "Backend ready (HTTP 200)"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Backend did not become ready"
+          tail -100 backend-system-validation.log || true
+          exit 1
+      - name: Install Newman
+        run: npm install --no-save --no-audit --no-fund --prefix /tmp/otms-newman newman@6
+      - name: Execute 32-request SRS-mapped collection
+        run: |
+          mkdir -p docs/reports/system-validation-latest
+          /tmp/otms-newman/node_modules/.bin/newman run \
+            docs/reports/system-validation.postman_collection.json \
+            --reporters cli,json \
+            --reporter-json-export docs/reports/system-validation-latest/newman-results.json
+      - name: Upload Newman results and backend logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: otms-system-validation-newman
+          path: |
+            docs/reports/system-validation-latest/newman-results.json
+            backend-system-validation.log
+          if-no-files-found: warn
