@@ -23,10 +23,6 @@ export default function TheatresPage() {
       .then(setTheatres)
       .catch((err) => setError(err.message));
 
-    api
-      .listSurgeries({ date: todayInputValue() })
-      .then(setSurgeries)
-      .catch(() => {});
   }, [canManage]);
 
   useEffect(() => {
@@ -95,8 +91,6 @@ export default function TheatresPage() {
                 {bookingsLoading ? 'Loading bookings…' : `${bookings.length} booking${bookings.length === 1 ? '' : 's'} on selected date`}
               </p>
               {bookingsLoading || bookingsError ? null : bookings.length === 0 ? (
-
-              {bookings.length === 0 ? (
                 <p className="muted">Available all day.</p>
               ) : (
                 <ul className="booking-list">
