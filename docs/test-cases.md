@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Document** | Test Case Specification (Deliverables Part-3 support document) |
-| **Version** | 2.0 (Sprint-3) |
-| **Date** | 2026-11-11 |
-| **Authors** | OTMS Team — see STP §9 for roles (QA Lead: Praneetha; Test Engineer: Suravi; Developer: Sudhiksha) |
-| **Status** | Approved for execution |
+| **Version** | 3.0 (current-code reconciliation) |
+| **Date** | 2026-11-18 |
+| **Authors** | OTMS Team — see STP §9 for roles (QA Lead: Sudhiksha; OT Coordinator: Praneetha; Product Owner: Shesanth; Development Lead: Suravi) |
+| **Status** | CI suites executed; updated HTTP system suite pending live execution |
 | **Baseline** | SRS v1.0, SAD v1.0, STP v1.0 (all in the repository root) |
 
 This document is the single source of truth for OTMS test cases: every case
@@ -21,6 +21,10 @@ records its current status. Execution results and evidence live in
 |---|---|---|
 | 1.0 | 2026-10-31 | Sprint-2 baseline: 14 backend + 10 frontend automated tests and a 9-request Postman collection. Catalog maintained informally in `STP_OTMS.docx` §13. |
 | 2.0 | 2026-11-11 | Sprint-3: this document. New/automated cases for role guards (TC-Auth-03/04, TC-SEC-02), theatre availability toggle (TC-RES-04), emergency impact & reschedule (TC-EMG-02/03/04), notifications (TC-NOT-01/02), concurrency (TC-Conc-01) and performance (TC-Perf-01). Postman collection extended 9 → 23 requests; `scripts/perf-check.js` added; suite now 45 backend + 26 frontend automated tests. |
+
+| 3.0 | 2026-11-18 | Reconciled test cases with merged nurse availability and theatre status RBAC, corrected V3 Flyway and Java environment, and linked real CI execution evidence (65 backend and 31 frontend passing). Updated Postman collection to 32 checks; fresh Newman execution pending. |
+
+**Current evidence note (v3.0):** Previous v2.0 case-level PASS labels and the historical summary below describe an earlier execution baseline; they are **not automatically proof for current code**. For the current version, 65 backend and 31 frontend automated tests passed in [CI run #44211242242](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44211242242). Fresh end-to-end Newman and manual acceptance results have **not** been recorded. See [current system validation report](reports/20261118-ci/system-validation-report.md). The explicit scope for new nurse checks is *assignment and overlapping-surgery conflicts*, not complete staff shifts/leave rosters.
 
 ## How to execute the suite
 
@@ -43,7 +47,7 @@ Notes:
 
 ## Test environment
 
-- Java 17, Spring Boot 3.3, H2 in-memory database (`ddl-auto: create-drop`).
+- Java 17, Spring Boot 3.3, H2 in-memory database (`ddl-auto: validate`, Flyway V1–V3 migrations).
 - Node 18+, React + Vite + Vitest frontend.
 - Seed accounts (password shown for the local/test environment only):
 
@@ -79,7 +83,7 @@ Notes:
 ### TC-Auth-03 — Insufficient role denied on protected endpoints (RBAC)
 - **Requirement:** OTMS-F-002 / OTMS-SR-002 · Priority: High · *Added in v2.0*
 - **Preconditions:** Authenticated session with a role that lacks the required permission.
-- **Steps:** As DOCTOR: `POST /api/surgeries` and `POST /api/surgeries/{id}/reschedule` with otherwise-valid payloads. As NURSE: `PATCH /api/surgeries/{id}/status` and `PATCH /api/theatres/{id}/availability`.
+- **Steps:** As DOCTOR: `POST /api/surgeries` and `POST /api/surgeries/{id}/reschedule` with otherwise-valid payloads. As NURSE: `PATCH /api/surgeries/{id}/status` and `PATCH /api/theatres/{id}/status`.
 - **Expected:** `403` with a role-denial message; no data modified.
 - **Automated by:** `SurgeryControllerSecurityTest.doctorCannotCreateSurgery`, `.doctorCannotRescheduleSurgery`, `.nurseCannotChangeSurgeryStatus`; `TheatreControllerTest.nurseCannotToggleTheatreAvailability`; Postman `TC-SEC-02` (doctor login + two 403 probes).
 - **Status:** Automated — PASS.
@@ -156,23 +160,23 @@ Notes:
 
 ### TC-RES-02 — Nurse availability
 - **Requirement:** OTMS-F-011 · Priority: Medium
-- **Status:** **Deferred** — nurse roster/availability is not part of the current data model; tracked in issue #14.
+- **Status:** **Implemented and tested for overlapping bookings** — `nurseId` is required by the scheduling service for new records; invalid/unavailable nurses or overlapping assigned-nurse bookings are rejected. Full shift/leave roster availability remains out of scope. Issue #14 is closed and PR #55 is merged. Latest backend CI passed; updated Newman request not yet executed.
 
 ### TC-RES-03 — Equipment availability
 - **Requirement:** OTMS-F-012 · Priority: Medium
-- **Status:** **Deferred** — equipment module not yet implemented; tracked in issue #15.
+- **Status:** **Implemented in current code** — active equipment is verified, and equipment already assigned to an overlapping surgery or in maintenance triggers a scheduling conflict (409). Issue #15 is closed; the updated Newman cases require live execution.
 
 ### TC-RES-04 — Theatre availability toggle *(new in v2.0)*
 - **Requirement:** OTMS-F-021 · Priority: High
-- **Preconditions:** TECHNICIAN or ADMIN logged in; an active theatre exists.
-- **Steps:** `PATCH /api/theatres/{id}/availability` with `{"active":false}`; attempt to schedule into the disabled theatre; toggle back to `{"active":true}`. Negative variants: missing `active` field (`400`), unknown theatre (`404`), NURSE attempting the toggle (`403`).
-- **Expected:** Toggle returns the theatre with the new state; scheduling into an inactive theatre is rejected with `404`; after re-enabling, scheduling succeeds; the UI shows the toggle only to technicians/admins.
-- **Automated by:** `TheatreControllerTest` (6 tests); `SchedulingServiceTest.rejectsSchedulingInInactiveTheatre`; `TheatresPage.test.jsx` (4 tests); Postman `TC-RES-04` chain (disable → 404 → re-enable).
+- **Preconditions:** ADMIN or COORDINATOR logged in; an active theatre exists.
+- **Steps:** `PATCH /api/theatres/{id}/status` with `{"active":false}`; attempt to schedule into the disabled theatre; toggle back to `{"active":true}`. Negative variants: missing `active` field (`400`), unknown theatre (`404`), TECHNICIAN attempting the toggle (`403`).
+- **Expected:** Toggle returns the theatre with the new state; scheduling into an inactive theatre is rejected with `409`; after re-enabling, scheduling can succeed; the UI shows the toggle only to coordinators/admins.
+- **Automated by:** `TheatreControllerTest` (6 tests); `SchedulingServiceTest.rejectsSchedulingInInactiveTheatre`; `TheatresPage.test.jsx` (4 tests); Updated Postman `TC-RES-04` chain (technician 403 → coordinator disables → scheduling 409 → re-enable); current Newman execution pending.
 - **Status:** Automated — PASS.
 
 ### TC-RES-05 — Equipment maintenance status
 - **Requirement:** OTMS-F-022 · Priority: Medium
-- **Status:** **Deferred** — equipment module not yet implemented; tracked in issue #15.
+- **Status:** **Implemented in current code** — ADMIN/TECHNICIAN can PATCH equipment status; the ordered Postman scenarios test maintenance, restoration, successful booking and revert. Fresh Newman execution pending.
 
 ## 5. Conflict Detection
 
@@ -322,7 +326,7 @@ Notes:
 
 ---
 
-## Summary metrics
+## Historical v2.0 summary metrics (superseded for current delivery)
 
 | Metric | Value |
 |---|---|
@@ -335,7 +339,7 @@ Notes:
 | Failed | 0 |
 | Blocked | 0 |
 
-### Requirement coverage (RTM excerpt)
+### Historical v2.0 requirement coverage (RTM excerpt; not a current acceptance claim)
 
 Every SRS requirement that is in scope for the current build maps to at
 least one executed test case: OTMS-F-001/002 (auth + RBAC), F-004–F-009
@@ -351,9 +355,23 @@ issues #13–#15 and the production checklist.
 
 | Test case | Requirement | Reason | Tracking |
 |---|---|---|---|
-| TC-RES-02 | OTMS-F-011 Nurse availability | Nurse roster not in current data model | Issue #14 |
-| TC-RES-03 | OTMS-F-012 Equipment availability | Equipment module not implemented | Issue #15 |
-| TC-RES-05 | OTMS-F-022 Equipment maintenance | Equipment module not implemented | Issue #15 |
+| TC-RES-02 | OTMS-F-011 Nurse availability | Implemented overlapping nurse checks, not shift rosters | [PR #55](https://github.com/suravii28/Operation-Theatre-Management-System/pull/55), closed #14 |
+| TC-RES-03 | OTMS-F-012 Equipment availability | Implemented; current HTTP re-run outstanding | Closed #15 |
+| TC-RES-05 | OTMS-F-022 Equipment maintenance | Implemented; current HTTP re-run outstanding | Closed #15 |
 | TC-SEC-01 | OTMS-SR-001 TLS 1.2+ | TLS terminates at the production reverse proxy; local runs are plain HTTP | Production deployment checklist |
 | TC-SEC-03 | OTMS-SR-003 Audit logging | Feature not yet implemented | Issue #13 |
 | TC-Rel-01 | OTMS-NF-002 Availability | Needs deployed environment + uptime monitoring | Production deployment checklist |
+
+
+## Current v3.0 execution matrix (18 November 2026)
+
+| Test area | Evidence | Status |
+|---|---|---|
+| Backend scheduling, nurse, equipment, access checks and migrations | 65/65 Maven tests passed, CI run #44211242242 | **PASS (CI)** |
+| Frontend UI component / logic tests | 31/31 Vitest tests passed, same CI | **PASS (CI)** |
+| PostgreSQL profile integration | GitHub Actions PostgreSQL + Flyway job successful; Flyway V1–V3 applied | **PASS (CI)** |
+| Full 32-request Postman live HTTP suite | `docs/reports/system-validation.postman_collection.json` updated; Newman workflow added | **NOT YET VERIFIED at this checkpoint** |
+| Security hardening / audit event trail | No merged dedicated audit repository or token-refresh/rate limiting | **BLOCKED BY OPEN ISSUES #12/#13** |
+| Production availability + manual usability sign-off | No current signed live-environment execution sheet | **PENDING** |
+
+The results above refer to the new measured baseline and **do not rewrite dates or pass claims for the original November 2–6 test window**. See `docs/reports/20261118-ci/` for separately titled unit, system, code coverage, and branch coverage reports.
