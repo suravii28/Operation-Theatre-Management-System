@@ -1,5 +1,8 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+
+import { useCallback, useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
+import { api } from '../api/client.js';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', end: true },
@@ -13,10 +16,31 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadUnreadCount = useCallback(() => {
+    api.listNotifications()
+      .then((notifications) => {
+        setUnreadCount(notifications.filter((notification) => !notification.read).length);
+      })
+      .catch(() => {
+        setUnreadCount(0);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadUnreadCount();
+  }, [loadUnreadCount, location.pathname]);
 
   function handleLogout() {
     logout();
     navigate('/login', { replace: true });
+  }
+
+  function openNotifications() {
+    navigate('/notifications');
   }
 
   return (
@@ -29,6 +53,7 @@ export default function Layout() {
             <small>Operation Theatre Management</small>
           </div>
         </div>
+
         <nav className="nav">
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -49,10 +74,30 @@ export default function Layout() {
             <strong>{user?.name}</strong>
             <span className="role-chip">{user?.role}</span>
           </div>
-          <button type="button" className="btn btn-ghost" onClick={handleLogout}>
-            Sign out
-          </button>
+
+          <div className="topbar-actions">
+            <button
+              type="button"
+              className="notification-bell"
+              onClick={openNotifications}
+              aria-label={`Notifications, ${unreadCount} unread`}
+              title="Notifications"
+            >
+              <span aria-hidden="true">🔔</span>
+
+              {unreadCount > 0 ? (
+                <span className="notification-count">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : null}
+            </button>
+
+            <button type="button" className="btn btn-ghost" onClick={handleLogout}>
+              Sign out
+            </button>
+          </div>
         </header>
+
         <main className="content">
           <Outlet />
         </main>

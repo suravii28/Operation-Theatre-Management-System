@@ -3,6 +3,7 @@ package com.otms.config;
 
 import com.otms.model.*;
 import com.otms.repository.EquipmentRepository;
+import com.otms.repository.NotificationRepository;
 import com.otms.repository.SurgeryRepository;
 import com.otms.repository.TheatreRepository;
 import com.otms.repository.UserAccountRepository;
@@ -24,6 +25,7 @@ public class DataInitializer implements ApplicationRunner {
         private final TheatreRepository theatreRepository;
         private final SurgeryRepository surgeryRepository;
         private final EquipmentRepository equipmentRepository;
+        private final NotificationRepository notificationRepository;
         private final PasswordEncoder passwordEncoder;
 
         public DataInitializer(
@@ -31,11 +33,13 @@ public class DataInitializer implements ApplicationRunner {
                         TheatreRepository theatreRepository,
                         SurgeryRepository surgeryRepository,
                         EquipmentRepository equipmentRepository,
+                        NotificationRepository notificationRepository,
                         PasswordEncoder passwordEncoder) {
                 this.userRepository = userRepository;
                 this.theatreRepository = theatreRepository;
                 this.surgeryRepository = surgeryRepository;
                 this.equipmentRepository = equipmentRepository;
+                this.notificationRepository = notificationRepository;
                 this.passwordEncoder = passwordEncoder;
         }
 
@@ -102,6 +106,15 @@ public class DataInitializer implements ApplicationRunner {
                                 today.plusDays(1).atTime(14, 0),
                                 today.plusDays(1).atTime(16, 30),
                                 false, null, defibrillator);
+
+                // Seed one unread notification for the coordinator demo.
+                // Notifications are shared because the current entity has no recipient field.
+                if (notificationRepository.count() == 0) {
+                        notificationRepository.save(new Notification(
+                                        NotificationType.EMERGENCY_SCHEDULED,
+                                        "Emergency surgery scheduled: 'Emergency laparotomy' for Lakshmi Rao in OT-1",
+                                        null));
+                }
         }
 
         private UserAccount user(String email, String password, String name, Role role) {
