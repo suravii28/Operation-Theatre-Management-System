@@ -1,6 +1,4 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-
-import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext.jsx';
@@ -117,7 +115,7 @@ describe('TheatresPage', () => {
       .toHaveTextContent('Access denied for your role');
   });
   it('requests bookings for a newly selected date', async () => {
-    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
     api.listTheatres.mockResolvedValue(THEATRES);
     api.listSurgeries.mockResolvedValue([]);
 
@@ -132,7 +130,7 @@ describe('TheatresPage', () => {
   });
 
   it('shows an error if bookings cannot be loaded', async () => {
-    localStorage.setItem('otms.token', fakeToken('TECHNICIAN'));
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
     api.listTheatres.mockResolvedValue(THEATRES);
     api.listSurgeries.mockRejectedValue(new Error('Booking API unavailable'));
 
