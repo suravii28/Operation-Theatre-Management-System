@@ -32,7 +32,7 @@
 | Rubric item | State | Evidence / action |
 |---|---|---|
 | Test cases updated | **UPDATED IN PR #58** | `docs/test-cases.md` v3 and revised Postman collection |
-| Testing per STP completed | **PARTIAL** | Backend, frontend and PostgreSQL CI suites pass; live 33-request Newman and performance checks passed; browser E2E/manual items still need execution |
+| Testing per STP completed | **PARTIAL** | Backend, frontend and PostgreSQL CI suites pass; live 33-request Newman and performance checks passed; four Chromium browser smoke checks passed; comprehensive browser E2E/manual items remain |
 | Unit Test Report | **GENERATED** | `docs/reports/20261118-ci/unit-test-report.md` — 65 backend + 31 frontend tests passed |
 | System Validation Report | **GENERATED, LIVE API PASSED; MANUAL GAPS** | `docs/reports/20261118-ci/system-validation-report.md` — includes 33/33 live HTTP requests and 36/36 assertions passing in run 44213680844 |
 | Code Coverage Report | **GENERATED** | `docs/reports/20261118-ci/code-coverage-report.md` — measured JaCoCo/V8 artifacts |
@@ -59,3 +59,5 @@
 4. Obtain teammate reviews and explicit freeze confirmation; record final main SHA.
 5. Record/upload two videos (one-minute terminal Sprint 1; two-minute UI Sprint 2).
 6. Resolve or explicitly sign off on open security/audit/E2E/reliability scope (#9, #10, #12, #13, #21, #22, #30, #31).
+
+**Additional QA evidence:** [Chromium browser E2E smoke #44215079683](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44215079683) passed 4/4 checks (login/dashboard, Surgeries navigation, Emergency impact, Reports CSV export). This is smoke coverage, not every STP case.
