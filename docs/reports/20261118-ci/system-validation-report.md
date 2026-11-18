@@ -15,7 +15,7 @@ System validation checks whether the integrated API and UI meet major SRS accept
 | React component and workflow behavior | 31 Vitest tests in CI | **PASS in CI** |
 | PostgreSQL integration under `prod` profile | Dedicated CI PostgreSQL service job | **PASS in CI** |
 | Full HTTP API/Postman collection against running backend | `docs/reports/system-validation.postman_collection.json` updated to 33 ordered requests | **PASS — 33 requests; 36 assertions; 0 failures (CI run 44213680844)** |
-| Browser end-to-end (Playwright/Cypress) | No completed E2E CI suite in current `main` | **NOT VERIFIED** |
+| Chromium browser E2E smoke | Four live UI checks; [run #44215079683](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44215079683) | **PASS (4/4), current PR branch only** |
 | Role-based manual walkthrough | No new signed execution record | **NOT VERIFIED** |
 | Sustained availability and deployed-system validation | No deployed monitoring dataset | **NOT VERIFIED** |
 
@@ -53,4 +53,7 @@ Repository evidence: [redacted Newman run summary](system-validation-results-sum
 
 ## Acceptance decision
 
-**PARTIAL — backend/frontend/PostgreSQL CI, live Postman HTTP tests and the normal-load probe all passed.** A browser E2E suite, signed manual usability walkthrough, deployed availability monitoring and dedicated security/audit tests remain outstanding. Do not label Part-3 2(a) fully complete until these are resolved or formally accepted as scope deviations.
+**PARTIAL — backend/frontend/PostgreSQL CI, live Postman HTTP tests and the normal-load probe all passed.** Full browser E2E coverage (beyond the four passing smoke checks), signed manual usability walkthrough, deployed availability monitoring and dedicated security/audit tests remain outstanding. Do not label Part-3 2(a) fully complete until these are resolved or formally accepted as scope deviations.
+
+
+**Supplementary browser evidence:** [Browser E2E smoke report](browser-e2e-smoke-report.md) documents 4 passing Playwright/Chromium checks and explicitly lists untested flows.
