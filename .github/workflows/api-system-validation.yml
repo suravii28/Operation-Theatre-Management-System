@@ -59,8 +59,7 @@ jobs:
         if: always()
         run: |
           mkdir -p docs/reports/system-validation-latest
-          node scripts/perf-check.js --requests 180 --concurrency 6 \\
-            --out docs/reports/system-validation-latest/performance-results.json
+          node scripts/perf-check.js --requests 180 --concurrency 6 --out docs/reports/system-validation-latest/performance-results.json
       - name: Upload Newman, performance and backend logs
         if: always()
         uses: actions/upload-artifact@v4
