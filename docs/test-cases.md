@@ -22,7 +22,7 @@ records its current status. Execution results and evidence live in
 | 1.0 | 2026-10-31 | Sprint-2 baseline: 14 backend + 10 frontend automated tests and a 9-request Postman collection. Catalog maintained informally in `STP_OTMS.docx` §13. |
 | 2.0 | 2026-11-11 | Sprint-3: this document. New/automated cases for role guards (TC-Auth-03/04, TC-SEC-02), theatre availability toggle (TC-RES-04), emergency impact & reschedule (TC-EMG-02/03/04), notifications (TC-NOT-01/02), concurrency (TC-Conc-01) and performance (TC-Perf-01). Postman collection extended 9 → 23 requests; `scripts/perf-check.js` added; suite now 45 backend + 26 frontend automated tests. |
 
-| 3.0 | 2026-11-18 | Reconciled test cases with merged nurse availability and theatre status RBAC, corrected V3 Flyway and Java environment, and linked real CI execution evidence (65 backend and 31 frontend passing). Updated Postman collection to 32 checks; fresh Newman execution pending. |
+| 3.0 | 2026-11-18 | Reconciled test cases with merged nurse availability and theatre status RBAC, corrected V3 Flyway and Java environment, and linked real CI execution evidence (65 backend and 31 frontend passing). Updated Postman collection to 33 checks; fresh Newman execution pending. |
 
 **Current evidence note (v3.0):** Previous v2.0 case-level PASS labels and the historical summary below describe an earlier execution baseline; they are **not automatically proof for current code**. For the current version, 65 backend and 31 frontend automated tests passed in [CI run #44211242242](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44211242242). Fresh end-to-end Newman and manual acceptance results have **not** been recorded. See [current system validation report](reports/20261118-ci/system-validation-report.md). The explicit scope for new nurse checks is *assignment and overlapping-surgery conflicts*, not complete staff shifts/leave rosters.
 
@@ -370,7 +370,7 @@ issues #13–#15 and the production checklist.
 | Backend scheduling, nurse, equipment, access checks and migrations | 65/65 Maven tests passed, CI run #44211242242 | **PASS (CI)** |
 | Frontend UI component / logic tests | 31/31 Vitest tests passed, same CI | **PASS (CI)** |
 | PostgreSQL profile integration | GitHub Actions PostgreSQL + Flyway job successful; Flyway V1–V3 applied | **PASS (CI)** |
-| Full 32-request Postman live HTTP suite | `docs/reports/system-validation.postman_collection.json` updated; Newman workflow added | **NOT YET VERIFIED at this checkpoint** |
+| Full 33-request Postman live HTTP suite | `docs/reports/system-validation.postman_collection.json` updated; Newman workflow added | **NOT YET VERIFIED at this checkpoint** |
 | Security hardening / audit event trail | No merged dedicated audit repository or token-refresh/rate limiting | **BLOCKED BY OPEN ISSUES #12/#13** |
 | Production availability + manual usability sign-off | No current signed live-environment execution sheet | **PENDING** |
 
