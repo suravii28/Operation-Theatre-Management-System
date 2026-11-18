@@ -14,6 +14,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
 
   const load = useCallback(() => {
     api
@@ -37,6 +38,11 @@ export default function NotificationsPage() {
   }
 
   const unread = notifications.filter((n) => !n.read).length;
+  const visibleNotifications = notifications.filter((notification) => {
+    if (filter === 'unread') return !notification.read;
+    if (filter === 'emergencies') return notification.type === 'EMERGENCY_SCHEDULED';
+    return true;
+  });
 
   return (
     <section>
@@ -58,7 +64,13 @@ export default function NotificationsPage() {
       ) : (
         <div className="card table-card">
           <p className="muted">{unread} unread</p>
-          <table>
+          <label htmlFor="notification-filter">Show notifications</label>
+          <select id="notification-filter" value={filter} onChange={(event) => setFilter(event.target.value)}>
+            <option value="all">All</option>
+            <option value="unread">Unread only</option>
+            <option value="emergencies">Emergencies only</option>
+          </select>
+          {visibleNotifications.length === 0 ? <p>No notifications match this filter.</p> : <table>
             <thead>
               <tr>
                 <th>Type</th>
@@ -69,7 +81,7 @@ export default function NotificationsPage() {
               </tr>
             </thead>
             <tbody>
-              {notifications.map((notification) => (
+              {visibleNotifications.map((notification) => (
                 <tr key={notification.id} className={notification.read ? 'muted-row' : ''}>
                   <td>
                     <span className={`badge ${TYPE_CLASS[notification.type] ?? 'badge-scheduled'}`}>
@@ -95,7 +107,7 @@ export default function NotificationsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table>}
         </div>
       )}
     </section>

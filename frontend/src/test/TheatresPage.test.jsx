@@ -1,5 +1,4 @@
-
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext.jsx';
@@ -115,4 +114,30 @@ describe('TheatresPage', () => {
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('Access denied for your role');
   });
+  it('requests bookings for a newly selected date', async () => {
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
+    api.listTheatres.mockResolvedValue(THEATRES);
+    api.listSurgeries.mockResolvedValue([]);
+
+    renderPage();
+
+    const dateField = await screen.findByLabelText('Booking date');
+    fireEvent.change(dateField, { target: { value: '2030-01-15' } });
+
+    await waitFor(() => {
+      expect(api.listSurgeries).toHaveBeenCalledWith({ date: '2030-01-15' });
+    });
+  });
+
+  it('shows an error if bookings cannot be loaded', async () => {
+    localStorage.setItem('otms.token', fakeToken('COORDINATOR'));
+    api.listTheatres.mockResolvedValue(THEATRES);
+    api.listSurgeries.mockRejectedValue(new Error('Booking API unavailable'));
+
+    renderPage();
+
+    expect(await screen.findByText(/Could not load bookings: Booking API unavailable/)).toBeInTheDocument();
+    expect(screen.queryByText('Available all day.')).not.toBeInTheDocument();
+  });
+
 });
