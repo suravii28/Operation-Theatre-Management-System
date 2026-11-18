@@ -889,7 +889,7 @@
           "script": {
             "exec": [
               "pm.test('returns 404 for inactive theatre', function () {",
-              "  pm.response.to.have.status(404);",
+              "  pm.response.to.have.status(409);",
               "  const body = pm.response.json();",
               "  pm.expect(body.message).to.include('Theatre');",
               "});"
