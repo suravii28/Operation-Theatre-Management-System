@@ -13,6 +13,8 @@
 
 Full coverage assets are available from the **actual run**, in GitHub Actions artifacts `backend-coverage-jacoco` (ID 14385678512) and `frontend-coverage-v8` (ID 14385522919). These reports should be read alongside the updated [Test Case Specification v3](../test-cases.md) and the [submission checklist](../submission-readiness.md).
 
+**Supplementary E2E evidence:** [Chromium smoke report](20261118-ci/browser-e2e-smoke-report.md) — 4/4 browser checks passed in [workflow #44215079683](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44215079683).
+
 ## Historical evidence
 
 `20261031-sprint2/` is the archived Sprint-2 baseline; preserve it rather than relabel it as the current run. Existing reports generated from older commits do not automatically validate subsequent changes, including nurse assignment and the theatre API status endpoint.
@@ -45,4 +47,4 @@ GitHub workflow `.github/workflows/api-system-validation.yml` runs the full live
 
 ## Interpreting acceptance
 
-CI unit/component coverage is a prerequisite but **not** complete acceptance testing. Manual UI usability, uptime, dedicated audit logging, security hardening and an end-to-end browser flow still need explicit results or documented deviations. Don't mark these passed without actually executing them.
+CI unit/component coverage is a prerequisite but **not** complete acceptance testing. Full SRS-scale browser journey coverage, manual UI usability, uptime, dedicated audit logging, security hardening and an end-to-end browser flow still need explicit results or documented deviations. Don't mark these passed without actually executing them.
