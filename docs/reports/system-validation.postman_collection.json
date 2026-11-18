@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "OTMS System Validation",
-    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), equipment availability and maintenance (TC-RES-03/05), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01). Updated for Sprint-3 nurse assignment and the current /api/theatres/{id}/status endpoint. CI run evidence is separate from this source collection.",
+    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), equipment availability and maintenance (TC-RES-03/05), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01). Updated for Sprint-3 nurse assignment and the current /api/theatres/{id}/status endpoint. CI run evidence is separate from this source collection. Includes explicit cross-theatre assigned-nurse double-booking regression case.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -472,6 +472,66 @@
       }
     },
     {
+      "name": "TC-RES-02 Nurse double-booking across different surgeon and theatre rejected",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const pad = (n) => String(n).padStart(2, '0');",
+              "const dayAt = (h, m) => {",
+              "  const d = new Date();",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('nurseClashStart', dayAt(9, 30));",
+              "pm.collectionVariables.set('nurseClashEnd', dayAt(10, 30));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-RES-02 rejects nurse double-booking even for different theatre and doctor', () => {",
+              "  pm.response.to.have.status(409);",
+              "  pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Nurse Conflict Probe\",\"procedureName\":\"Nurse overlap check\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drPriyaId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{nurseClashStart}}\",\"endTime\":\"{{nurseClashEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
       "name": "TC-EMG-01 Emergency surgeries are listed",
       "event": [
         {
@@ -888,7 +948,7 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('returns 404 for inactive theatre', function () {",
+              "pm.test('returns 409 for inactive theatre', function () {",
               "  pm.response.to.have.status(409);",
               "  const body = pm.response.json();",
               "  pm.expect(body.message).to.include('Theatre');",
@@ -1773,6 +1833,14 @@
     },
     {
       "key": "nurseId",
+      "value": ""
+    },
+    {
+      "key": "nurseClashStart",
+      "value": ""
+    },
+    {
+      "key": "nurseClashEnd",
       "value": ""
     }
   ]
