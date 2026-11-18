@@ -52,6 +52,9 @@ The proposed technology stack, as documented in the Software Requirements Specif
 
 ## Project Documentation
 
+For assessed submission evidence, see [submission-readiness checklist](docs/submission-readiness.md), [sprint and deviations record](docs/sprint-plan-and-deviations.md), [current Part-3 reports](docs/reports/README.md), [implemented architecture](docs/architecture-implemented.md) and [REST API reference](docs/api-reference-implemented.md).
+
+
 The repository currently contains the following project documents:
 
 1. **Software Requirements Specification (SRS)** — Defines functional and non-functional requirements, system features, interfaces, security requirements, and acceptance criteria.
@@ -74,7 +77,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the developer workflow (branches, tes
 requests, reviews, and syncing `main`) and [docs/git-workflow.md](docs/git-workflow.md)
 for how the rules are enforced by CI, hooks, and branch protection.
 
-### PostgreSQL development database\n\nThe default profile uses in-memory H2 and applies the same Flyway migrations automatically. To run with PostgreSQL:\n\n```bash\ndocker compose up -d postgres\ncd backend\nDB_URL=jdbc:postgresql://localhost:5432/otms DB_USERNAME=otms DB_PASSWORD=otms_dev_password JWT_SECRET=replace-this-with-a-long-random-secret ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod\n```\n\nFlyway applies versioned SQL migrations on startup; Hibernate validates the resulting schema and does not create or alter tables. The PostgreSQL CI job runs the backend test suite against a real PostgreSQL service.\n\n### Quick start for contributors
+### PostgreSQL development database
+
+The default profile uses in-memory H2 and applies the same Flyway migrations automatically. To run with PostgreSQL:
+
+```bash
+docker compose up -d postgres
+cd backend
+DB_URL=jdbc:postgresql://localhost:5432/otms DB_USERNAME=otms DB_PASSWORD=otms_dev_password JWT_SECRET=replace-this-with-a-long-random-secret ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+```
+
+Flyway applies versioned SQL migrations on startup; Hibernate validates the resulting schema and does not create or alter tables. The PostgreSQL CI job runs the backend test suite against a real PostgreSQL service.
+
+### Quick start for contributors
 
 ```bash
 git clone https://github.com/suravii28/Operation-Theatre-Management-System.git

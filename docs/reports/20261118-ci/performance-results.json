@@ -1,0 +1,52 @@
+{
+  "requirement": "OTMS-NF-001 / TC-PERF-01",
+  "target": "p90 <= 3000 ms",
+  "startedAt": "2026-11-18T01:10:35.915Z",
+  "baseUrl": "http://localhost:8080",
+  "totalRequests": 180,
+  "concurrency": 6,
+  "completed": 180,
+  "failures": 0,
+  "wallSeconds": 0.6,
+  "throughputPerSecond": 296.1,
+  "overall": {
+    "count": 180,
+    "p50": 18.9,
+    "p90": 32.7,
+    "p95": 35.9,
+    "p99": 47.8,
+    "max": 53.7,
+    "avg": 20
+  },
+  "perEndpoint": {
+    "GET /api/surgeries": {
+      "count": 60,
+      "p50": 19.5,
+      "p90": 29.4,
+      "p95": 34.7,
+      "p99": 45.8,
+      "max": 45.8,
+      "avg": 22
+    },
+    "GET /api/theatres": {
+      "count": 60,
+      "p50": 8.6,
+      "p90": 15.7,
+      "p95": 18.9,
+      "p99": 26.7,
+      "max": 26.7,
+      "avg": 10
+    },
+    "POST /api/surgeries": {
+      "count": 60,
+      "p50": 26.7,
+      "p90": 35.9,
+      "p95": 40.9,
+      "p99": 53.7,
+      "max": 53.7,
+      "avg": 28
+    }
+  },
+  "verdict": "PASS",
+  "source_workflow": "https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844"
+}

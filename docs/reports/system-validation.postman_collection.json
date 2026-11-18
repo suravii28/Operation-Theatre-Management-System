@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "OTMS System Validation",
-    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), equipment availability and maintenance (TC-RES-03/05), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01).",
+    "description": "System Validation Report collection (Deliverables Part-3 2b ii). Run against a live backend freshly booted with seed data (DataInitializer seeds on every boot). Maps to SRS acceptance test cases; Sprint-3 additions cover role guards (TC-SEC-02), theatre availability (TC-RES-04), equipment availability and maintenance (TC-RES-03/05), emergency impact/reschedule (TC-EMG-03/04), notifications (TC-NOT-01/02) and report data (TC-REP-01). Updated for Sprint-3 nurse assignment and the current /api/theatres/{id}/status endpoint. CI run evidence is separate from this source collection. Includes explicit cross-theatre assigned-nurse double-booking regression case.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -206,6 +206,51 @@
       }
     },
     {
+      "name": "Setup - Resolve seeded nurse ID (Sprint-3)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('seeded nurse resolves for required nurse assignment', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const nurse = pm.response.json().find((u) => u.name === 'Meera Nurse');",
+              "  pm.expect(nurse).to.be.an('object');",
+              "  pm.expect(nurse.id).to.be.a('number');",
+              "  pm.collectionVariables.set('nurseId', nurse.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/staff?role=NURSE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "staff"
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "NURSE"
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "TC-SURG-03 View surgery list with token",
       "event": [
         {
@@ -300,7 +345,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Postman Validation\",\"procedureName\":\"Validation cholecystectomy\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{createStart}}\",\"endTime\":\"{{createEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Postman Validation\",\"procedureName\":\"Validation cholecystectomy\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{createStart}}\",\"endTime\":\"{{createEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -362,7 +407,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Overlap Patient\",\"procedureName\":\"Overlap procedure\",\"theatreId\":{{ot1Id}},\"leadSurgeonId\":{{drPriyaId}},\"startTime\":\"{{overlapStart}}\",\"endTime\":\"{{overlapEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Overlap Patient\",\"procedureName\":\"Overlap procedure\",\"theatreId\":{{ot1Id}},\"leadSurgeonId\":{{drPriyaId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{overlapStart}}\",\"endTime\":\"{{overlapEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -422,7 +467,67 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Surgeon Clash\",\"procedureName\":\"Clash procedure\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{clashStart}}\",\"endTime\":\"{{clashEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Surgeon Clash\",\"procedureName\":\"Clash procedure\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{clashStart}}\",\"endTime\":\"{{clashEnd}}\",\"emergency\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-RES-02 Nurse double-booking across different surgeon and theatre rejected",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const pad = (n) => String(n).padStart(2, '0');",
+              "const dayAt = (h, m) => {",
+              "  const d = new Date();",
+              "  d.setHours(h, m, 0, 0);",
+              "  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());",
+              "};",
+              "pm.collectionVariables.set('nurseClashStart', dayAt(9, 30));",
+              "pm.collectionVariables.set('nurseClashEnd', dayAt(10, 30));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-RES-02 rejects nurse double-booking even for different theatre and doctor', () => {",
+              "  pm.response.to.have.status(409);",
+              "  pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/surgeries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "surgeries"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"patientName\":\"Nurse Conflict Probe\",\"procedureName\":\"Nurse overlap check\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drPriyaId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{nurseClashStart}}\",\"endTime\":\"{{nurseClashEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -617,7 +722,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Doctor Denied\",\"procedureName\":\"Role guard probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{guardStart}}\",\"endTime\":\"{{guardEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Doctor Denied\",\"procedureName\":\"Role guard probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{guardStart}}\",\"endTime\":\"{{guardEnd}}\",\"emergency\":false}"
         }
       }
     },
@@ -727,7 +832,52 @@
       }
     },
     {
-      "name": "TC-RES-04 Technician disables theatre availability",
+      "name": "TC-RES-04 Technician cannot toggle theatre (403)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('technician theatre update is forbidden by current RBAC', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{techToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "theatres",
+            "{{ot3Id}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"active\":false}"
+        }
+      }
+    },
+    {
+      "name": "TC-RES-04 Coordinator disables theatre availability",
       "event": [
         {
           "listen": "test",
@@ -753,11 +903,11 @@
           },
           {
             "key": "Authorization",
-            "value": "Bearer {{techToken}}"
+            "value": "Bearer {{token}}"
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability",
+          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/status",
           "host": [
             "{{baseUrl}}"
           ],
@@ -765,7 +915,7 @@
             "api",
             "theatres",
             "{{ot3Id}}",
-            "availability"
+            "status"
           ]
         },
         "body": {
@@ -798,8 +948,8 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('returns 404 for inactive theatre', function () {",
-              "  pm.response.to.have.status(404);",
+              "pm.test('returns 409 for inactive theatre', function () {",
+              "  pm.response.to.have.status(409);",
               "  const body = pm.response.json();",
               "  pm.expect(body.message).to.include('Theatre');",
               "});"
@@ -832,12 +982,12 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Disabled Theatre Patient\",\"procedureName\":\"Availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{disabledStart}}\",\"endTime\":\"{{disabledEnd}}\",\"emergency\":false}"
+          "raw": "{\"patientName\":\"Disabled Theatre Patient\",\"procedureName\":\"Availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{disabledStart}}\",\"endTime\":\"{{disabledEnd}}\",\"emergency\":false}"
         }
       }
     },
     {
-      "name": "TC-RES-04 Technician re-enables theatre availability",
+      "name": "TC-RES-04 Coordinator re-enables theatre availability",
       "event": [
         {
           "listen": "test",
@@ -863,11 +1013,11 @@
           },
           {
             "key": "Authorization",
-            "value": "Bearer {{techToken}}"
+            "value": "Bearer {{token}}"
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/availability",
+          "raw": "{{baseUrl}}/api/theatres/{{ot3Id}}/status",
           "host": [
             "{{baseUrl}}"
           ],
@@ -875,7 +1025,7 @@
             "api",
             "theatres",
             "{{ot3Id}}",
-            "availability"
+            "status"
           ]
         },
         "body": {
@@ -1039,7 +1189,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Maintenance Probe\",\"procedureName\":\"Equipment availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{equipMaintStart}}\",\"endTime\":\"{{equipMaintEnd}}\",\"emergency\":false,\"equipmentIds\":[{{heartLungId}}]}"
+          "raw": "{\"patientName\":\"Maintenance Probe\",\"procedureName\":\"Equipment availability probe\",\"theatreId\":{{ot3Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{equipMaintStart}}\",\"endTime\":\"{{equipMaintEnd}}\",\"emergency\":false,\"equipmentIds\":[{{heartLungId}}]}"
         }
       },
       "response": []
@@ -1102,7 +1252,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Equipment Clash\",\"procedureName\":\"Equipment clash probe\",\"theatreId\":{{ot2Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{equipInUseStart}}\",\"endTime\":\"{{equipInUseEnd}}\",\"emergency\":false,\"equipmentIds\":[{{cArmId}}]}"
+          "raw": "{\"patientName\":\"Equipment Clash\",\"procedureName\":\"Equipment clash probe\",\"theatreId\":{{ot2Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{equipInUseStart}}\",\"endTime\":\"{{equipInUseEnd}}\",\"emergency\":false,\"equipmentIds\":[{{cArmId}}]}"
         }
       },
       "response": []
@@ -1215,7 +1365,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"patientName\":\"Repaired Equipment Probe\",\"procedureName\":\"Equipment availability probe\",\"theatreId\":{{ot2Id}},\"leadSurgeonId\":{{drRamId}},\"startTime\":\"{{equipReadyStart}}\",\"endTime\":\"{{equipReadyEnd}}\",\"emergency\":false,\"equipmentIds\":[{{heartLungId}}]}"
+          "raw": "{\"patientName\":\"Repaired Equipment Probe\",\"procedureName\":\"Equipment availability probe\",\"theatreId\":{{ot2Id}},\"leadSurgeonId\":{{drRamId}},\"nurseId\":{{nurseId}},\"startTime\":\"{{equipReadyStart}}\",\"endTime\":\"{{equipReadyEnd}}\",\"emergency\":false,\"equipmentIds\":[{{heartLungId}}]}"
         }
       },
       "response": []
@@ -1679,6 +1829,18 @@
     },
     {
       "key": "equipReadyEnd",
+      "value": ""
+    },
+    {
+      "key": "nurseId",
+      "value": ""
+    },
+    {
+      "key": "nurseClashStart",
+      "value": ""
+    },
+    {
+      "key": "nurseClashEnd",
       "value": ""
     }
   ]

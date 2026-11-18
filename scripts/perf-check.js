@@ -111,8 +111,10 @@ async function main() {
   const ot3 = theatres.find((t) => t.name === 'OT-3');
   const staff = JSON.parse((await api('GET', '/api/staff?role=DOCTOR', token)).body);
   const surgeon = staff.find((u) => u.name === 'Dr. Priya Nair');
-  if (!ot3 || !surgeon) {
-    console.error('Seed data incomplete (missing OT-3 or Dr. Priya Nair).');
+  const nurses = JSON.parse((await api('GET', '/api/staff?role=NURSE', token)).body);
+  const nurse = nurses.find((u) => u.name === 'Meera Nurse');
+  if (!ot3 || !surgeon || !nurse) {
+    console.error('Seed data incomplete (missing OT-3, Dr. Priya Nair or Meera Nurse).');
     process.exit(1);
   }
 
@@ -145,6 +147,7 @@ async function main() {
           procedureName: 'Perf probe',
           theatreId: ot3.id,
           leadSurgeonId: surgeon.id,
+          nurseId: nurse.id,
           startTime: s.start,
           endTime: s.end,
           emergency: false,

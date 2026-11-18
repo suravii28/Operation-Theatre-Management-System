@@ -1,4 +1,4 @@
-# OTMS story-point allocation — 17 November 2026
+# OTMS story-point allocation — updated 18 November 2026
 
 This is a **retrospective estimate of work scope**, not hours, number of commits, proof of authorship, or a claim that every acceptance criterion has passed. The **owner** is the person assigned to the project area/issue in `CONTRIBUTORS.md`; a GitHub PR may have been submitted by someone else. Use Fibonacci-style points: **2** small checklist, **3** bounded test/infra improvement, **5** substantial feature/test suite, **8** broad cross-layer work.
 
@@ -9,8 +9,8 @@ This is a **retrospective estimate of work scope**, not hours, number of commits
 | Suravi (@suravii28) | 32 | 0 | **32** |
 | Shesanth (@shestg28) | 28 | 3 | **31** |
 | Sudhiksha (@sudhikshavaranasi) | 5 | 29 | **34** |
-| Praneetha (@PraneethaSreedharala) | 21 | 7 | **28** |
-| **Team** | **86** | **39** | **125** |
+| Praneetha (@PraneethaSreedharala) | 26 | 2 | **28** |
+| **Team** | **91** | **34** | **125** |
 
 The completed column reflects work present via merged PRs or documentation added in [PR #52](../pull/52), **not** validation that every test or acceptance criterion is satisfied. Open issue status may lag behind PR activity; review the individual acceptance criteria before closing issues. Do not represent the total allocated column as completed velocity.
 
@@ -52,7 +52,7 @@ The completed column reflects work present via merged PRs or documentation added
 
 | Work | Points | Status / evidence |
 |---|---:|---|
-| Nurse availability and conflict prevention | 5 | **Open** [#14](../issues/14); [PR #49](../pull/49) closed without merge |
+| Nurse availability and conflict prevention | 5 | **Merged** [PR #55](../pull/55); issue [#14](../issues/14) closed (earlier PR #49 closed unmerged) |
 | Emergency impact and assisted rescheduling | 8 | Closed [#16](../issues/16), merged [PR #37](../pull/37) |
 | In-app schedule and emergency notifications | 5 | Closed [#17](../issues/17), merged [PR #38](../pull/38) |
 | Theatre availability management | 3 | Closed [#18](../issues/18), merged [PR #35](../pull/35) |
@@ -66,3 +66,6 @@ The completed column reflects work present via merged PRs or documentation added
 - The merged PR author and the owner listed here may differ. Story points indicate **planning ownership, not verified individual coding credit**.
 - The two feature changes in **draft [PR #53](../pull/53)** (theatre date selection, notification filters) are **excluded** until reviewed and merged; reassess after tests pass.
 - Update estimates during sprint review; don't infer contribution or productivity directly from commit counts.
+
+
+**18 November reconciliation:** Nurse assignment and conflict prevention are now on `main` via merged [PR #55](../pull/55); five story points moved from outstanding to merged scope, without changing the team's total allocated estimate. A further theatre availability PR [#56](../pull/56) was merged, but overlaps already counted issue #18 and does **not** earn duplicate points. The 18 November testing work in [PR #58](../pull/58) remains proposed until merged and should not be retroactively attributed to a different author or counted as completed velocity.

@@ -1,31 +1,50 @@
-# OTMS Test Reports (Deliverables Part-3)
+# OTMS Part-3 Testing and QA Reports
 
-This folder holds the four required test reports. Generation is automated
-where possible; each report maps to a Part-3 deliverable.
+**Latest verified baseline:** `main` commit `a983c69f9a3ac8c395f13503f8e4d3999652bc8e`, [CI run #44211242242](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44211242242), **18 November 2026**. These tests occurred **after** the assignment's specified **2–6 November** testing window, not during it.
 
-| Deliverable | Report | How to produce | Status |
-|---|---|---|---|
-| 2(b)i | Unit Test Report | `./scripts/generate-reports.sh` → `unit-backend/` (Surefire XML) + `unit-frontend/` (Vitest) | Pipeline ready — run on main after PRs #3/#4 merge |
-| 2(b)ii | System Validation Report | Run `system-validation.postman_collection.json` against a live instance (see below), export results JSON here | Collection TODO (issue #21) |
-| 2(b)iii | Code Coverage Report | Same script → `backend-jacoco/index.html` (line coverage) and `frontend-coverage/index.html` | Pipeline ready |
-| 2(b)iv | Branch Coverage Report | Same script → JaCoCo report's **Branches** column per class | Pipeline ready |
+## Required reports
 
-## System validation run (TC-level pass through the REST API)
+| Part-3 deliverable | Current report | Measured evidence |
+|---|---|---|
+| (i) Unit Test Report | [unit-test-report.md](20261118-ci/unit-test-report.md) | Backend 65/65 pass; frontend 31/31 pass |
+| (ii) System Validation Report | [system-validation-report.md](20261118-ci/system-validation-report.md) | Live Newman 33/33 requests and 36/36 assertions passed; 180-request performance p90 32.7ms in [run #44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844) |
+| (iii) Code Coverage Report | [code-coverage-report.md](20261118-ci/code-coverage-report.md) | JaCoCo backend **84.93% lines**; V8 frontend **79.64% lines** |
+| (iv) Branch Coverage Report | [branch-coverage-report.md](20261118-ci/branch-coverage-report.md) | JaCoCo backend **71.54% branches**; V8 frontend **76.34% branches** |
 
-1. Start the backend: `cd backend && ./mvnw spring-boot:run` (Java 17).
-2. In Postman: import `system-validation.postman_collection.json`, set
-   collection variable `baseUrl` = `http://localhost:8080`, run the collection.
-3. Export the run result (JSON) into a dated `docs/reports/<timestamp>/`
-   folder and commit it on a branch via PR.
+Full coverage assets are available from the **actual run**, in GitHub Actions artifacts `backend-coverage-jacoco` (ID 14385678512) and `frontend-coverage-v8` (ID 14385522919). These reports should be read alongside the updated [Test Case Specification v3](../test-cases.md) and the [submission checklist](../submission-readiness.md).
 
-The collection exercises the SRS acceptance paths: TC-Auth-01/02 (login +
-rejection), TC-SURG-01 (create), TC-SCH-02/03 (theatre overlap → 409),
-TC-RES-01 (surgeon overlap → 409), TC-EMG-01 (emergency flag), TC-CON-01/02
-(conflict detection + details in response), TC-REP-01 (utilization data).
+**Supplementary E2E evidence:** [Chromium smoke report](20261118-ci/browser-e2e-smoke-report.md) — 4/4 browser checks passed in [workflow #44215079683](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44215079683).
 
-## Notes
+## Historical evidence
 
-- CI also uploads coverage as workflow artifacts (backend-coverage-jacoco,
-  frontend-coverage-v8) on every run — useful before reports are committed.
-- JaCoCo branch coverage counts partially covered branches per method; a
-  branch is fully covered only when both outcomes were executed by tests.
+`20261031-sprint2/` is the archived Sprint-2 baseline; preserve it rather than relabel it as the current run. Existing reports generated from older commits do not automatically validate subsequent changes, including nurse assignment and the theatre API status endpoint.
+
+## Running tests
+
+```bash
+# Java 17 backend unit/service/integration tests
+cd backend
+./mvnw test
+
+# React/Vitest and coverage
+cd ../frontend
+npm ci
+npm test
+npm run test:coverage
+
+# Live REST API system tests: run on a freshly started backend
+cd ..
+npx newman run docs/reports/system-validation.postman_collection.json \
+  --reporters cli,json \
+  --reporter-json-export docs/reports/20261118-ci/system-validation-newman-results.json
+
+# Normal-load HTTP performance validation
+node scripts/perf-check.js --requests 180 --concurrency 6 \
+  --out docs/reports/20261118-ci/performance-results.json
+```
+
+GitHub workflow `.github/workflows/api-system-validation.yml` runs the full live API/Postman suite, captures Newman output, runs the performance probe and uploads JSON/log artifacts. Its validated passing run is [#44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844); see [system-validation-results-summary.json](20261118-ci/system-validation-results-summary.json) and [performance-results.json](20261118-ci/performance-results.json).
+
+## Interpreting acceptance
+
+CI unit/component coverage is a prerequisite but **not** complete acceptance testing. Full SRS-scale browser journey coverage, manual UI usability, uptime, dedicated audit logging, security hardening and an end-to-end browser flow still need explicit results or documented deviations. Don't mark these passed without actually executing them.
