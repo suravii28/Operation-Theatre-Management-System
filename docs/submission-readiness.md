@@ -32,9 +32,9 @@
 | Rubric item | State | Evidence / action |
 |---|---|---|
 | Test cases updated | **UPDATED IN PR #58** | `docs/test-cases.md` v3 and revised Postman collection |
-| Testing per STP completed | **PARTIAL** | Backend, frontend and PostgreSQL CI suites pass; new live Newman/system check and manual items need execution |
+| Testing per STP completed | **PARTIAL** | Backend, frontend and PostgreSQL CI suites pass; live 33-request Newman and performance checks passed; browser E2E/manual items still need execution |
 | Unit Test Report | **GENERATED** | `docs/reports/20261118-ci/unit-test-report.md` — 65 backend + 31 frontend tests passed |
-| System Validation Report | **GENERATED, EXECUTION PARTIAL** | `docs/reports/20261118-ci/system-validation-report.md` — distinguishes observed CI evidence from pending live HTTP cases |
+| System Validation Report | **GENERATED, LIVE API PASSED; MANUAL GAPS** | `docs/reports/20261118-ci/system-validation-report.md` — includes 33/33 live HTTP requests and 36/36 assertions passing in run 44213680844 |
 | Code Coverage Report | **GENERATED** | `docs/reports/20261118-ci/code-coverage-report.md` — measured JaCoCo/V8 artifacts |
 | Branch Coverage Report | **GENERATED** | `docs/reports/20261118-ci/branch-coverage-report.md` — measured JaCoCo/V8 artifacts |
 | Reports uploaded to `docs/` | **IN PR #58** | These files are committed on the submission feature branch; merge after review and CI |
@@ -53,7 +53,7 @@
 
 ## Blocking items before claiming full submission completeness
 
-1. Run and inspect the current API Newman workflow (and save its actual output), not just the test collection.
+1. **Completed:** live Newman suite and performance probe passed in [run #44213680844](https://github.com/suravii28/Operation-Theatre-Management-System/actions/runs/44213680844); summary JSON and metrics are in `docs/reports/20261118-ci/`. Preserve current evidence during final merge.
 2. Perform actual manual usability walkthrough and system-level demo; attach results to `docs/`.
 3. Confirm GitHub Project sprint iterations/point values in the board.
 4. Obtain teammate reviews and explicit freeze confirmation; record final main SHA.
